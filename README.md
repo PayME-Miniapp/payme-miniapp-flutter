@@ -135,18 +135,21 @@ Bộ key bao gồm: appId, publicKey, privateKey. Liên hệ PayME để đượ
 | **appId**      | Có           | String                               |
 | **publicKey**  | Có           | String                               |
 | **privateKey** | Có           | String                               |
+| **env**        | Không        | String                               |
+| **mode**       | Không        | String                               |
 
 Chú thích:
 - appId: mỗi đối tác tích hợp PayME Miniapp sẽ được cấp 1 appId riêng biệt
 - publicKey, privateKey: cặp key được gen khi đăng ký đối tác với PayME
-
+- env: Môi trường khởi tạo PayMEMiniApp (PRODUCTION, SANDBOX)
+- mode: Chế độ sử dụng PayMEMiniApp (miniapp_sandbox, miniapp_product)
 
 Ví dụ:
 ```dart
 import 'package:payme_miniapp_flutter/payme_miniapp_flutter.dart';
 
 Future<void> init() async {
-    await PaymeMiniappFlutter.init(appId, publicKey, privateKey);
+    await PaymeMiniappFlutter.init(appId, publicKey, privateKey, env, mode);
 }
 ```
 
