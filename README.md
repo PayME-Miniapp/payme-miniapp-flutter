@@ -34,6 +34,11 @@ allprojects {
 
 ## iOS
 
+Thêm dòng này vào Podfile:
+```swift
+use_frameworks! :linkage => :static
+```
+
 Thêm vào cuối Podfile:
 
 ```swift
@@ -41,19 +46,16 @@ post_install do |installer|
   installer.pods_project.targets.each do |target|
     target.build_configurations.each do |config|
       config.build_settings['BUILD_LIBRARY_FOR_DISTRIBUTION'] = 'YES'
+      config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '12.4'
     end
   end
 end
-```
 
-Trường hợp project của bạn không dùng framework, cần thay đổi build config để khai báo framework như sau:
-
-```swift
 $dynamic_framework = ['PayMEMiniApp', 'CryptoSwift', 'SwiftyRSA', 'GCDWebServer', 'NSLogger', 'lottie-ios', 'SwiftyJSON', 'ZIPFoundation', 'Mixpanel-swift']
- pre_install do |installer|
-   installer.pod_targets.each do |pod|
-     if $dynamic_framework.include?(pod.name)
-       def pod.build_type;
+pre_install do |installer|
+  installer.pod_targets.each do |pod|
+    if $dynamic_framework.include?(pod.name)
+      def pod.build_type;
        Pod::BuildType.dynamic_framework
       end
     end
@@ -103,6 +105,14 @@ Tìm và chọn "Background Modes", bật lựa chọn "Background Fetch"
 ### Thiết lập cập nhật phiên bản PayMEMiniApp
 
 Thêm dòng sau vào AppDelegate:
+
+- Objective-C
+
+```objective-c
+- (void)application:(UIApplication *)application handleEventsForBackgroundURLSession:(NSString *)identifier completionHandler:(void (^)(void))completionHandler { completionHandler(); }
+```
+
+- Swift
 
 ```swift
 import UIKit
