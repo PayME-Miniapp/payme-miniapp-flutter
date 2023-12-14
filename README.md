@@ -1,4 +1,4 @@
-# payme-mini-app
+# payme_miniapp_flutter
 
 [Cài đặt](#cài-đặt)
 
