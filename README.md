@@ -266,7 +266,7 @@ Ví dụ:
 import 'package:payme_miniapp_flutter/payme_miniapp_flutter.dart';
 import 'package:payme_miniapp_flutter/payme_miniapp_type.dart';
 
-Future<void> onOpenMiniApp() async {
+Future<void> onPay() async {
     PayMEOpeningParam openingParam = PayMEOpeningParam.pay(
         phone: '0123456789',
         data: PayMEPaymentParam(
@@ -274,6 +274,30 @@ Future<void> onOpenMiniApp() async {
             transactionId: "121212",
             note: "abc",
             ipnUrl: "www.google.com"));
+
+    await PaymeMiniappFlutter.open(PayMEOpeningType.modal, openingParam);
+}
+```
+
+
+**PAYMENT:** đối tác dùng action này khi muốn mở giao diện thanh toán của Miniapp (đối tác chọn phương thức bên ứng dụng của đối tác)
+| **Thuộc tính** | **Bắt buộc** | **Kiểu dữ liệu** | **Giải thích** |
+|---------------------|--------------|------------------|--------------------------------------------|
+| **data** | Có | PaymentDirectData | Thông tin thêm để phục vụ việc thanh toán |
+
+Chi tiết PaymentDirectData:
+| **Thuộc tính** | **Bắt buộc** | **Kiểu dữ liệu** | **Giải thích** |
+|---------------------|--------------|------------------|--------------------------------------------------------------------------------------|
+| **transaction** | Có | String | Mã giao dịch |  
+
+Ví dụ:
+```dart
+import 'package:payme_miniapp_flutter/payme_miniapp_flutter.dart';
+import 'package:payme_miniapp_flutter/payme_miniapp_type.dart';
+
+Future<void> onPayment() async {
+    PayMEOpeningParam openingParam = PayMEOpeningParam.payment(
+        data: PayMEPaymentDirectParam(transaction: "1234567"));
 
     await PaymeMiniappFlutter.open(PayMEOpeningType.modal, openingParam);
 }
