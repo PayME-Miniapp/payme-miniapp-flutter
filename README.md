@@ -280,7 +280,11 @@ Future<void> onPay() async {
 ```
 
 
-**PAYMENT:** đối tác dùng action này khi muốn mở giao diện thanh toán của Miniapp (đối tác chọn phương thức bên ứng dụng của đối tác)
+**PAYMENT:** đối tác dùng action này khi muốn mở giao diện thanh toán của Miniapp
+- Các bước lấy danh sách phương thức và tạo mã giao dịch sẽ được thực hiện ở ứng dụng của đối tác (Chi tiết xin liên hệ PayME)
+  * Dùng kết nối qua API để lấy về danh sách phương thức
+  * Sau đó chọn phương thức sẽ gọi API tạo giao dịch để lấy về transaction
+  
 | **Thuộc tính** | **Bắt buộc** | **Kiểu dữ liệu** | **Giải thích** |
 |---------------------|--------------|------------------|--------------------------------------------|
 | **data** | Có | PaymentDirectData | Thông tin thêm để phục vụ việc thanh toán |
