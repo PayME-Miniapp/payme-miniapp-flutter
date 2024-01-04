@@ -149,7 +149,7 @@ Bộ key bao gồm: appId, publicKey, privateKey. Liên hệ PayME để đượ
 | **mode**       | Không        | String                               |
 
 Chú thích:
-- appId: mỗi đối tác tích hợp PayME Miniapp sẽ được cấp 1 appId riêng biệt
+- appId: mỗi đối tác tích hợp PayME Miniapp sẽ được cấp 1 appId riêng biệt (lưu ý: giá trị appId được lấy từ biến x-api-client trên dashboard)
 - publicKey, privateKey: cặp key được gen khi đăng ký đối tác với PayME
 - env: Môi trường khởi tạo PayMEMiniApp (PRODUCTION, SANDBOX)
 - mode: Chế độ sử dụng PayMEMiniApp (miniapp_sandbox, miniapp_product)
