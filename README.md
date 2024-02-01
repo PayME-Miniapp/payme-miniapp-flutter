@@ -145,12 +145,14 @@ Bộ key bao gồm: appId, publicKey, privateKey. Liên hệ PayME để đượ
 | **appId**      | Có           | String                               |
 | **publicKey**  | Có           | String                               |
 | **privateKey** | Có           | String                               |
+| **locale**     | Không        | String (từ phiên bản 1.0.14 trở về sau  |
 | **env**        | Không        | String                               |
 | **mode**       | Không        | String                               |
 
 Chú thích:
 - appId: mỗi đối tác tích hợp PayME Miniapp sẽ được cấp 1 appId riêng biệt (lưu ý: giá trị appId được lấy từ biến x-api-client trên dashboard)
 - publicKey, privateKey: cặp key được gen khi đăng ký đối tác với PayME
+- locale: Ngôn ngữ khởi tạo PayMEMiniApp (vi, en)
 - env: Môi trường khởi tạo PayMEMiniApp (PRODUCTION, SANDBOX)
 - mode: Chế độ sử dụng PayMEMiniApp (miniapp_sandbox, miniapp_product)
 
@@ -159,7 +161,7 @@ Ví dụ:
 import 'package:payme_miniapp_flutter/payme_miniapp_flutter.dart';
 
 Future<void> init() async {
-    await PaymeMiniappFlutter.init(appId, publicKey, privateKey, env, mode);
+    await PaymeMiniappFlutter.init(appId, publicKey, privateKey, locale, env, mode);
 }
 ```
 
@@ -260,6 +262,7 @@ Chi tiết PaymentData:
 | **amount** | Có | Int | Tổng số tiền giao dịch |  
 | **note** | Không | String | Ghi chú của giao dịch |
 | **ipnUrl** | Không | String | Đường dẫn để server PayME ipn đến khi giao dịch có tiến triển (thành công/thất bại) |
+| **isShowResult** | Không | Boolean | Có hiển thị màn hình kết quả của PayME không? (Default: true) |
 
 Ví dụ:
 ```dart
@@ -293,6 +296,7 @@ Chi tiết PaymentDirectData:
 | **Thuộc tính** | **Bắt buộc** | **Kiểu dữ liệu** | **Giải thích** |
 |---------------------|--------------|------------------|--------------------------------------------------------------------------------------|
 | **transaction** | Có | String | Mã giao dịch |  
+| **isShowResult** | Không | Boolean | Có hiển thị màn hình kết quả của PayME không? (Default: true) |
 
 Ví dụ:
 ```dart
@@ -369,6 +373,7 @@ Chi tiết PayMEPayParam:
 |---------------------|--------------|------------------|-------------------------------------------------------|
 | **description** | Không | String | Miêu tả giao dịch |  
 | **amount** | Không | Int | Tổng số tiền giao dịch |
+| **isShowResult** | Không | Boolean | Có hiển thị màn hình kết quả của PayME không? (Default: true) |
 
 **KYC:** đối tác dùng action này khi muốn mở giao diện kyc
 | **Thuộc tính** | **Bắt buộc** | **Kiểu dữ liệu** | **Giải thích** |
@@ -397,6 +402,7 @@ Chi tiết PayMEOpeningParam:
 | **Thuộc tính** | **Bắt buộc** | **Kiểu dữ liệu** | **Giải thích** |
 |---------------------|--------------|------------------|-------------------------------------------------------|
 | **code** | Không | String | Mã dịch vụ |
+| **isShowResult** | Không | Boolean | Có hiển thị màn hình kết quả của PayME không? (Default: true) |
 
 Danh sách mã dịch vụ:
 
@@ -454,3 +460,20 @@ Future<void> getAccountInfo() async {
 | **Tham số** | **Bắt buộc** | **Kiểu dữ liệu** | **Giải thích**                                                      |
 | ----------- | ------------ | ---------------- | ------------------------------------------------------------------- |
 | **phone**   | Có           | String           | Số điện thoại của tài khoản cần lấy số dư ví (không cần format +84) |
+
+
+### Hàm setLanguage (từ phiên bản 1.0.14 trở về sau)
+
+Đối tác dùng hàm này để lấy thay đổi ngôn ngữ
+
+```dart
+import 'package:payme_miniapp_flutter/payme_miniapp_flutter.dart';
+
+Future<void> setLanguage() async {
+    await PaymeMiniappFlutter.setLanguage('en');
+}
+```
+
+| **Tham số** | **Bắt buộc** | **Kiểu dữ liệu** | **Giải thích**                                                      |
+| ----------- | ------------ | ---------------- | ------------------------------------------------------------------- |
+| **language**   | Có           | String           | Ngôn ngữ cần đổi (vi, en) |
