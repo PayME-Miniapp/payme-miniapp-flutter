@@ -261,6 +261,7 @@ Chi tiết PaymentData:
 | **transactionId** | Có | String | Mã giao dịch |  
 | **amount** | Có | Int | Tổng số tiền giao dịch |  
 | **note** | Không | String | Ghi chú của giao dịch |
+| **extraData** | Không | Object | Dữ liệu bổ sung do đối tác quy định, dữ liệu này sẽ được trả về đối tác khi thanh toán thành công (từ version 1.1.0 trở về sau) |
 | **ipnUrl** | Không | String | Đường dẫn để server PayME ipn đến khi giao dịch có tiến triển (thành công/thất bại) |
 | **isShowResult** | Không | Boolean | Có hiển thị màn hình kết quả của PayME không? (Default: true) |
 
@@ -282,7 +283,6 @@ Future<void> onPay() async {
 }
 ```
 
-
 **PAYMENT:** đối tác dùng action này khi muốn mở giao diện thanh toán của Miniapp
 - Các bước lấy danh sách phương thức và tạo mã giao dịch sẽ được thực hiện ở ứng dụng của đối tác (Chi tiết xin liên hệ PayME)
   * Dùng kết nối qua API để lấy về danh sách phương thức
@@ -295,7 +295,8 @@ Future<void> onPay() async {
 Chi tiết PaymentDirectData:
 | **Thuộc tính** | **Bắt buộc** | **Kiểu dữ liệu** | **Giải thích** |
 |---------------------|--------------|------------------|--------------------------------------------------------------------------------------|
-| **transaction** | Có | String | Mã giao dịch |  
+| **transaction** | Có | String | Mã giao dịch |
+| **extraData** | Không | Object | Dữ liệu bổ sung do đối tác quy định, dữ liệu này sẽ được trả về đối tác khi thanh toán thành công (từ version 1.1.0 trở về sau) |
 | **isShowResult** | Không | Boolean | Có hiển thị màn hình kết quả của PayME không? (Default: true) |
 
 Ví dụ:
@@ -306,6 +307,46 @@ import 'package:payme_miniapp_flutter/payme_miniapp_type.dart';
 Future<void> onPayment() async {
     PayMEOpeningParam openingParam = PayMEOpeningParam.payment(
         data: PayMEPaymentDirectParam(transaction: "1234567"));
+
+    await PaymeMiniappFlutter.open(PayMEOpeningType.modal, openingParam);
+}
+```
+
+
+**TRANSFER_QR:** đối tác dùng action này khi muốn mở giao diện thanh toán của Miniapp (từ phiên bản 1.1.0 trở về sau)
+
+- Action này dùng để thực hiện việc chuyển tiền từ ví PayME đi đến tài khoản đích do đối tác truyền qua
+
+| **Thuộc tính** | **Bắt buộc** | **Kiểu dữ liệu** | **Giải thích**                            |
+| -------------- | ------------ | ---------------- | ----------------------------------------- |
+| **data**       | Có           | TransferQRData   | Thông tin thêm để phục vụ việc thanh toán |
+
+Chi tiết TransferQRData:
+| **Thuộc tính** | **Bắt buộc** | **Kiểu dữ liệu** | **Giải thích** |
+|---------------------|--------------|------------------|--------------------------------------------------------------------------------------|
+| **amount** | Có | Int | Số tiền giao dịch (nếu không có số tiền thì truyền 0) |
+| **bankNumber** | Có | String | Số thẻ ngân hàng |
+| **swiftCode** | Có | String | Mã swiftCode của ngân hàng |
+| **cardHolder** | Có | String | Tên chủ thẻ |
+| **partnerTransaction** | No | String | Mã giao dịch của đối tác |
+| **note** | Không | String | Ghi chú của giao dịch |
+| **extraData** | Không | Object | Dữ liệu bổ sung do đối tác quy định, dữ liệu này sẽ được trả về đối tác khi thanh toán thành công |
+| **isShowResult** | Không | Boolean | Có hiển thị màn hình kết quả của PayME không? (Default: true) |
+
+Ví dụ:
+```dart
+import 'package:payme_miniapp_flutter/payme_miniapp_flutter.dart';
+import 'package:payme_miniapp_flutter/payme_miniapp_type.dart';
+
+Future<void> onOpenTransferQR() async {
+    PayMEOpeningParam openingParam = PayMEOpeningParam.transferQR(
+        phone: '0795550300',
+        data: PayMETransferQRParam(
+            amount: 20000,
+            bankNumber: "9704000000000018",
+            swiftCode: "SBITVNVX",
+            cardHolder: "NGUYEN VAN A",
+            note: "test"));
 
     await PaymeMiniappFlutter.open(PayMEOpeningType.modal, openingParam);
 }
@@ -373,6 +414,7 @@ Chi tiết PayMEPayParam:
 |---------------------|--------------|------------------|-------------------------------------------------------|
 | **description** | Không | String | Miêu tả giao dịch |  
 | **amount** | Không | Int | Tổng số tiền giao dịch |
+| **extraData** | Không | Object | Dữ liệu bổ sung do đối tác quy định, dữ liệu này sẽ được trả về đối tác khi thanh toán thành công (từ version 1.1.0 trở về sau) |
 | **isShowResult** | Không | Boolean | Có hiển thị màn hình kết quả của PayME không? (Default: true) |
 
 **KYC:** đối tác dùng action này khi muốn mở giao diện kyc
@@ -402,6 +444,7 @@ Chi tiết PayMEOpeningParam:
 | **Thuộc tính** | **Bắt buộc** | **Kiểu dữ liệu** | **Giải thích** |
 |---------------------|--------------|------------------|-------------------------------------------------------|
 | **code** | Không | String | Mã dịch vụ |
+| **extraData** | Không | Object | Dữ liệu bổ sung do đối tác quy định, dữ liệu này sẽ được trả về đối tác khi thanh toán thành công (từ version 1.1.0 trở về sau) |
 | **isShowResult** | Không | Boolean | Có hiển thị màn hình kết quả của PayME không? (Default: true) |
 
 Danh sách mã dịch vụ:
@@ -477,3 +520,15 @@ Future<void> setLanguage() async {
 | **Tham số** | **Bắt buộc** | **Kiểu dữ liệu** | **Giải thích**                                                      |
 | ----------- | ------------ | ---------------- | ------------------------------------------------------------------- |
 | **language**   | Có           | String           | Ngôn ngữ cần đổi (vi, en) |
+
+### Hàm close (từ phiên bản 1.1.0 trở về sau)
+
+Đối tác dùng hàm này để đóng miniapp
+
+```dart
+import 'package:payme_miniapp_flutter/payme_miniapp_flutter.dart';
+
+Future<void> close() async {
+    await PaymeMiniappFlutter.close();
+}
+```
