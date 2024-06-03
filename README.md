@@ -36,27 +36,29 @@ allprojects {
 
 Thêm dòng này vào Podfile:
 ```swift
-use_frameworks! :linkage => :static
+use_frameworks!
 ```
 
 Thêm vào cuối Podfile:
 
 ```swift
-post_install do |installer|
-  installer.pods_project.targets.each do |target|
-    target.build_configurations.each do |config|
-      config.build_settings['BUILD_LIBRARY_FOR_DISTRIBUTION'] = 'YES'
-      config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '12.4'
+$dynamic_frameworks = ['PayME-Miniapp', 'CryptoSwift', 'SwiftyRSA', 'GCDWebServer', 'NSLogger', 'lottie-ios', 'SwiftyJSON', 'ZIPFoundation', 'Mixpanel-swift']
+pre_install do |installer|
+  installer.pod_targets.each do |pod|
+    if $dynamic_frameworks.include?(pod.name)
+      def pod.build_type;
+       Pod::BuildType.dynamic_framework
+      end
     end
   end
 end
 
-$dynamic_framework = ['PayMEMiniApp', 'CryptoSwift', 'SwiftyRSA', 'GCDWebServer', 'NSLogger', 'lottie-ios', 'SwiftyJSON', 'ZIPFoundation', 'Mixpanel-swift']
-pre_install do |installer|
-  installer.pod_targets.each do |pod|
-    if $dynamic_framework.include?(pod.name)
-      def pod.build_type;
-       Pod::BuildType.dynamic_framework
+post_install do |installer|
+  installer.pods_project.targets.each do |target|
+    target.build_configurations.each do |config|
+      if $dynamic_frameworks.include?(target.name)
+        config.build_settings['BUILD_LIBRARY_FOR_DISTRIBUTION'] = 'YES'
+        config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '12.4'
       end
     end
   end
@@ -72,24 +74,27 @@ Cập nhật Info.plist những key như bên dưới để đảm bảo PayMEMi
 
 ```swift
 Privacy - Camera Usage Description
-Privacy - Face ID Usage Description
 Privacy - Photo Library Usage Description
 Privacy - Photo Library Additions Usage Description
 Privacy - Contacts Usage Description
-Privacy - Location When In Use Usage Description
-Privacy - Location Always Usage Description
 ```
 
 Raw Keys version:
 
 ```swift
 NSCameraUsageDescription
-NSFaceIDUsageDescription
 NSPhotoLibraryUsageDescription
 NSPhotoLibraryAddUsageDescription
 NSContactsUsageDescription
-NSLocationWhenInUseUsageDescription
-NSLocationAlwaysUsageDescription
+```
+
+Giải thích:
+
+```text
+- NSCameraUsageDescription: Quyền để chụp ảnh khi sử dụng tính năng KYC
+- NSPhotoLibraryUsageDescription: Quyền sử dụng hình ảnh trong thư viện khi sử dụng tính năng tải QR Code
+- NSPhotoLibraryAddUsageDescription: Quyền thêm hình ảnh vào trong thư viện khi sử dụng tính năng tải QR Code
+- NSContactsUsageDescription: Quyền truy cập danh bạ khi sử dụng tính năng nạp tiền điện thoại cho thuê bao trong danh bạ
 ```
 
 ### Thêm Capabilities
