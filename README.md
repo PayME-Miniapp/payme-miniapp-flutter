@@ -32,6 +32,10 @@ allprojects {
 }
 ```
 
+## Android
+
+⚠️  Miniapp chỉ hỗ trợ phiên bản Android ≥ 26 và targetSdk ≥ 33 do tính năng NFC.
+
 ## iOS
 
 ⚠️ Miniapp hỗ trợ iOS 13+.
@@ -73,11 +77,14 @@ end
 Cập nhật Info.plist những key như bên dưới để đảm bảo PayMEMiniApp có thể hoạt động
 ![info_plist.png](./documents/info_plist.png)
 
+⚠️ Từ version 1.5.0 cần thêm quyền NFC để thực hiện việc KYC qua NFC
+
 ```swift
 Privacy - Camera Usage Description
 Privacy - Photo Library Usage Description
 Privacy - Photo Library Additions Usage Description
 Privacy - Contacts Usage Description
+Privacy - NFC Scan Usage Description
 ```
 
 Raw Keys version:
@@ -87,6 +94,7 @@ NSCameraUsageDescription
 NSPhotoLibraryUsageDescription
 NSPhotoLibraryAddUsageDescription
 NSContactsUsageDescription
+NFCReaderUsageDescription
 ```
 
 Giải thích:
@@ -102,9 +110,13 @@ Giải thích:
 
 Ở XCode, chọn app của bạn ở mục Targets -> Signing & Capabilities -> Nhấn dấu "+" ở góc trên bên phải để mở cửa sổ thêm capability cho app
 
-![capabilities.png](./documents/capabilities.png)
+⚠️ Từ version 0.9.0 cần thêm capabilities Near Field Communication Tag Reading để hỗ trợ việc quét NFC
+
+Tìm và chọn "Near Field Communication Tag Reading"
 
 Tìm và chọn "Background Modes", bật lựa chọn "Background Fetch"
+
+![capabilities.png](./documents/capabilities.png)
 
 ![background_fetch.png](./documents/background_fetch.png)
 
