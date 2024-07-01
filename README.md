@@ -114,9 +114,11 @@ Giải thích:
 
 Tìm và chọn "Near Field Communication Tag Reading"
 
+![capabilities2.png](./documents/capabilities2.png)
+
 Tìm và chọn "Background Modes", bật lựa chọn "Background Fetch"
 
-![capabilities.png](./documents/capabilities.png)
+![capabilities1.png](./documents/capabilities1.png)
 
 ![background_fetch.png](./documents/background_fetch.png)
 
