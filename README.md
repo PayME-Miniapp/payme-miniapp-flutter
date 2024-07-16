@@ -36,6 +36,19 @@ allprojects {
 
 ⚠️  Miniapp chỉ hỗ trợ phiên bản Android ≥ 26 và targetSdk ≥ 33 do tính năng NFC.
 
+⚠️ Nếu bạn có khai báo minifyEnabled = true. Bạn hãy thêm các rules này trong proguard-rules.pro của mình:
+
+```
+-keep class vn.kalapa.ekyc.**{*;}
+-keep class com.fis.ekyc.**{*;}
+-keep class com.fis.nfc.**{*;}
+-keep class retrofit2.** { *; }
+
+-keepclassmembers,allowobfuscation class * {
+    @com.google.gson.annotations.SerializedName <fields>;
+}
+```
+
 ## iOS
 
 ⚠️ Miniapp hỗ trợ iOS 13+.
