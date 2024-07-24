@@ -77,6 +77,7 @@ post_install do |installer|
     target.build_configurations.each do |config|
       if $dynamic_frameworks.include?(target.name)
         config.build_settings['BUILD_LIBRARY_FOR_DISTRIBUTION'] = 'YES'
+        config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '13.0'
       end
     end
   end
@@ -93,6 +94,7 @@ Cập nhật Info.plist những key như bên dưới để đảm bảo PayMEMi
 ⚠️ Từ version 1.5.0 cần thêm quyền NFC để thực hiện việc KYC qua quét NFC
 
 ```swift
+Queried URL Schemes
 Privacy - Camera Usage Description
 Privacy - Photo Library Usage Description
 Privacy - Photo Library Additions Usage Description
@@ -104,6 +106,7 @@ ISO7816 application identifiers for NFC Tag Reader Session
 Raw Keys version:
 
 ```swift
+LSApplicationQueriesSchemes
 NSCameraUsageDescription
 NSPhotoLibraryUsageDescription
 NSPhotoLibraryAddUsageDescription
@@ -115,6 +118,7 @@ com.apple.developer.nfc.readersession.iso7816.select-identifiers
 Giải thích:
 
 ```text
+- LSApplicationQueriesSchemes: Khai báo URL schemes cho việc nạp tiền qua deeplink của ngân hàng VCB
 - NSCameraUsageDescription: Quyền để chụp ảnh khi sử dụng tính năng KYC
 - NSPhotoLibraryUsageDescription: Quyền sử dụng hình ảnh trong thư viện khi sử dụng tính năng tải QR Code
 - NSPhotoLibraryAddUsageDescription: Quyền thêm hình ảnh vào trong thư viện khi sử dụng tính năng tải QR Code
@@ -124,6 +128,10 @@ Giải thích:
 
 Info.plist mẫu:
 ```
+<key>LSApplicationQueriesSchemes</key>
+<array>
+  <string>vcbpartner</string>
+</array>
 <key>NSCameraUsageDescription</key>
 <string>Chúng tôi cần dùng máy ảnh để sử dụng cho việc định danh và đọc mã vạch thanh toán</string>
 <key>NSContactsUsageDescription</key>
