@@ -220,12 +220,21 @@ Chú thích:
 - env: Môi trường khởi tạo PayMEMiniApp (PRODUCTION, SANDBOX)
 - mode: Chế độ sử dụng PayMEMiniApp (miniapp_sandbox, miniapp_product)
 
+⚠️ Lưu ý: xóa "\n" và dấu xuống hàng ở cặp publicKey + privateKey. Xem đoạn mã ví dụ ở dưới để biết chi tiết
+
 Ví dụ:
 ```dart
 import 'package:payme_miniapp_flutter/payme_miniapp_flutter.dart';
 
 Future<void> init() async {
-    await PaymeMiniappFlutter.init(appId, publicKey, privateKey, locale, env, mode);
+    await PaymeMiniappFlutter.init(
+        appId: "559163930378",
+        publicKey: "-----BEGIN PUBLIC KEY-----MFwwDQYJKoZIhvcNAQEBBQADSwAwSAJBAK0RONYVPYn/3IWloU83Qy16hKNHhlCxgTJay6/rERk8tmsMbILLzTYW7H9WOqN2gS0s0ymD+3TxP+q+MxEp0qECAwEAAQ==-----END PUBLIC KEY-----",
+        privateKey: "-----BEGIN RSA PRIVATE KEY-----MIIBOgIBAAJBAMXIuvTT8Z5U/AqyFvBbDApQ2STLm9Ca2nmu2pxqwhrhN+80mOLbMzbQDRCNpro6S61d34A7cEIX/5gxxrAaVAkCAwEAAQJAfzB70e/uJHTgdHxcNgtG7edaDMiHFhpPPwtL+GTLGH70yhFDs2eIXFHLY/wfRRcxzwGyGOyvXlGbDjsMFdpnlQIhAPIoUVsADDfI4KNZEKHaJRVAmz2D0xdiB6R716HA7A0XAiEA0RcPxHzYLhVp+adoGpJBq7e87BzQrVBJQFSOg8Kim98CIQCYmynyFEye1zwiFR3zMfuOsiFjGfFs2f2A/f69VEwuTwIgFN/3jAdm0dsDdJBZHWYCtnEmpHAQCW2dkpWekNsKvwMCIGXmrg+mppNNZQx6+6Swsp8L8Hgc+HikKy02Okijjw0W-----END RSA PRIVATE KEY-----",
+        locale: "vi",
+        env: "SANDBOX",
+        mode: "miniapp_sandbox"
+    );
 }
 ```
 
