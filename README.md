@@ -1,19 +1,30 @@
 # payme_miniapp_flutter
 
-[Cài đặt](#cài-đặt)
-
-- [Cài thư viện](#cài-thư-viện)
-- [Android](#android)
-- [iOS](#ios)
-
-[Cách sử dụng](#cách-sử-dụng)
-<!-- - [Khởi tạo PayMEMiniApp](#khoi-tao-paymeminiapp) -->
+- [Cài đặt](#cài-đặt)
+  - [Cài thư viện](#cài-thư-viện)
+  - [Android](#android)
+  - [iOS](#ios)
+  - [Thiết lập application tương thích với PayMEMiniApp](#thiết-lập-application-tương-thích-với-paymeminiapp)
+    - [Info.plist](#infoplist)
+    - [Thêm Capabilities](#thêm-capabilities)
+    - [Thiết lập cập nhật phiên bản PayMEMiniApp](#thiết-lập-cập-nhật-phiên-bản-paymeminiapp)
+- [Cách sử dụng](#cách-sử-dụng)
+  - [Khởi tạo PayMEMiniApp](#khởi-tạo-paymeminiapp)
+    - [Thiết lập bộ key từ PayME](#thiết-lập-bộ-key-từ-payme)
+    - [identityToken (từ SDK native 0.8.0)](#identitytoken-từ-sdk-native-080)
+    - [Khởi tạo Miniapp](#khởi-tạo-miniapp)
+    - [Set up các listeners](#set-up-các-listeners)
+    - [Hàm openMiniApp](#hàm-openminiapp)
+    - [Hàm getBalance](#hàm-getbalance)
+    - [Hàm getAccountInfo](#hàm-getaccountinfo)
+    - [Hàm setLanguage (từ phiên bản 1.0.14 trở về sau)](#hàm-setlanguage-từ-phiên-bản-1014-trở-về-sau)
+    - [Hàm close (từ phiên bản 1.1.0 trở về sau)](#hàm-close-từ-phiên-bản-110-trở-về-sau)
 
 # Cài đặt
 
 ## Cài thư viện 
 
-```flutter
+```sh
 flutter pub add payme_miniapp_flutter
 ```
 
@@ -21,7 +32,7 @@ flutter pub add payme_miniapp_flutter
 **Thêm maven jitpack.io**
 
 Update file build.gradle project
-```kotlin
+```groovy
 allprojects {
   repositories {
     ...
@@ -32,13 +43,11 @@ allprojects {
 }
 ```
 
-## Android
-
-⚠️  Miniapp chỉ hỗ trợ phiên bản Android ≥ 26 và targetSdk ≥ 33 do tính năng NFC.
+⚠️ Miniapp chỉ hỗ trợ phiên bản Android ≥ 26 và targetSdk ≥ 33 do tính năng NFC.
 
 ⚠️ Nếu bạn có khai báo minifyEnabled = true. Bạn hãy thêm các rules này trong proguard-rules.pro của mình:
 
-```
+```proguard
 -keep class vn.kalapa.ekyc.**{*;}
 -keep class com.fis.ekyc.**{*;}
 -keep class com.fis.nfc.**{*;}
@@ -54,13 +63,13 @@ allprojects {
 ⚠️ Miniapp hỗ trợ iOS 13+.
 
 Thêm dòng này vào Podfile:
-```swift
+```ruby
 use_frameworks! :linkage => :static
 ```
 
 Thêm vào cuối Podfile:
 
-```swift
+```ruby
 $dynamic_frameworks = ['PayME-Miniapp', 'CryptoSwift', 'SwiftyRSA', 'GCDWebServer', 'NSLogger', 'lottie-ios', 'SwiftyJSON', 'ZIPFoundation', 'Mixpanel-swift']
 pre_install do |installer|
   installer.pod_targets.each do |pod|
@@ -93,7 +102,7 @@ Cập nhật Info.plist những key như bên dưới để đảm bảo PayMEMi
 
 ⚠️ Từ version 1.5.0 cần thêm quyền NFC để thực hiện việc KYC qua quét NFC
 
-```swift
+```text
 Queried URL Schemes
 Privacy - Camera Usage Description
 Privacy - Photo Library Usage Description
@@ -105,7 +114,7 @@ ISO7816 application identifiers for NFC Tag Reader Session
 
 Raw Keys version:
 
-```swift
+```text
 LSApplicationQueriesSchemes
 NSCameraUsageDescription
 NSPhotoLibraryUsageDescription
@@ -127,7 +136,7 @@ Giải thích:
 ```
 
 Info.plist mẫu:
-```
+```xml
 <key>LSApplicationQueriesSchemes</key>
 <array>
   <string>vcbpartner</string>
@@ -200,9 +209,19 @@ func application(_ application: UIApplication, handleEventsForBackgroundURLSessi
 
 Bộ key bao gồm: appId, publicKey, privateKey. Liên hệ PayME để được hướng dẫn.
 
+### identityToken (từ SDK native 0.8.0)
+
+⚠️ Từ SDK native 0.8.0 (Android `com.github.PayME-Miniapp:native-android:0.8.0`, iOS `PayME-Miniapp 0.8.0`), Miniapp không còn nhận số điện thoại (`phone`). Các hàm mở Miniapp, `getBalance` và `getAccountInfo` nhận `identityToken` thay cho số điện thoại. Đây là thay đổi không tương thích với các phiên bản dùng SDK native 0.7.x.
+
+- Server của đối tác gọi API khởi tạo `identityToken` của PayME (server-to-server, ký RSA bằng key của đối tác) với số điện thoại của người dùng, rồi truyền chuỗi nhận được vào app. Liên hệ PayME để nhận tài liệu API này.
+- `identityToken` là chuỗi 64 ký tự hex, gắn với `appId` và số điện thoại đã khai báo. Chuỗi sống 15 phút và dùng lại được nhiều lần trong thời gian đó.
+- Khi `identityToken` sai hoặc hết hạn, Miniapp đóng và stream `onError` trả lỗi có `code` là `401`. Đối tác gọi lại API khởi tạo để lấy chuỗi mới rồi mở lại Miniapp.
+- Chỉ giữ `identityToken` trong bộ nhớ: không ghi log, không lưu vào bộ nhớ máy, không đưa lên URL.
+- Action **PAYMENT** không bắt buộc `identityToken`. Không truyền thì người dùng thanh toán như khách vãng lai (thẻ, QR).
+
 ### Khởi tạo Miniapp
 
-<strong>*Việc khởi tạo này cũng sẽ bắt đầu việc kiểm tra và download phiên bản của PayMEMiniApp, do đó khuyến khích khởi tạo càng sớm càng tốt khi chạy app.*<strong>
+<strong>*Việc khởi tạo này cũng sẽ bắt đầu việc kiểm tra và download phiên bản của PayMEMiniApp, do đó khuyến khích khởi tạo càng sớm càng tốt khi chạy app.*</strong>
 
 | **Tham số**    | **Bắt buộc** | **Kiểu dữ liệu**                     |
 | -------------- | ------------ | ------------------------------------ |
@@ -225,18 +244,21 @@ Chú thích:
 Ví dụ:
 ```dart
 import 'package:payme_miniapp_flutter/payme_miniapp_flutter.dart';
+import 'package:payme_miniapp_flutter/payme_miniapp_type.dart';
 
 Future<void> init() async {
     await PaymeMiniappFlutter.init(
-        appId: "559163930378",
-        publicKey: "-----BEGIN PUBLIC KEY-----MFwwDQYJKoZIhvcNAQEBBQADSwAwSAJBAK0RONYVPYn/3IWloU83Qy16hKNHhlCxgTJay6/rERk8tmsMbILLzTYW7H9WOqN2gS0s0ymD+3TxP+q+MxEp0qECAwEAAQ==-----END PUBLIC KEY-----",
-        privateKey: "-----BEGIN RSA PRIVATE KEY-----MIIBOgIBAAJBAMXIuvTT8Z5U/AqyFvBbDApQ2STLm9Ca2nmu2pxqwhrhN+80mOLbMzbQDRCNpro6S61d34A7cEIX/5gxxrAaVAkCAwEAAQJAfzB70e/uJHTgdHxcNgtG7edaDMiHFhpPPwtL+GTLGH70yhFDs2eIXFHLY/wfRRcxzwGyGOyvXlGbDjsMFdpnlQIhAPIoUVsADDfI4KNZEKHaJRVAmz2D0xdiB6R716HA7A0XAiEA0RcPxHzYLhVp+adoGpJBq7e87BzQrVBJQFSOg8Kim98CIQCYmynyFEye1zwiFR3zMfuOsiFjGfFs2f2A/f69VEwuTwIgFN/3jAdm0dsDdJBZHWYCtnEmpHAQCW2dkpWekNsKvwMCIGXmrg+mppNNZQx6+6Swsp8L8Hgc+HikKy02Okijjw0W-----END RSA PRIVATE KEY-----",
-        locale: "vi",
-        env: "SANDBOX",
-        mode: "miniapp_sandbox"
+        "<APP_ID>", // appId
+        "-----BEGIN PUBLIC KEY-----<PUBLIC_KEY_BASE64>-----END PUBLIC KEY-----", // publicKey, viết trên một dòng
+        "-----BEGIN RSA PRIVATE KEY-----<PRIVATE_KEY_BASE64>-----END RSA PRIVATE KEY-----", // privateKey, viết trên một dòng
+        locale: PayMELocale.VI, // mặc định PayMELocale.VI
+        env: PayMEEnv.SANDBOX, // mặc định PayMEEnv.PRODUCTION
+        mode: PayMEMode.MINIAPP_SANDBOX // mặc định PayMEMode.MINIAPP_PRODUCT
     );
 }
 ```
+
+⚠️ Không đưa key thật vào README, source code public hay ảnh chụp màn hình. Dùng bộ key PayME cấp riêng cho ứng dụng của bạn.
 
 ### Set up các listeners:
 
@@ -278,8 +300,12 @@ Chi tiết các kiểu dữ liệu
 | **WITHDRAW** | Mở giao diện rút tiền |
 | **TRANSFER** | Mở giao diện chuyển tiền |
 | **KYC** | Mở giao diện kyc |
+| **PAYMENT** | Mở giao diện thanh toán giao dịch do đối tác tạo sẵn |
+| **TRANSFER_QR** | Mở giao diện chuyển tiền từ ví PayME đến tài khoản đích do đối tác truyền vào |
+| **GET_ACCOUNT_INFO** | Lấy thông tin tài khoản PayME |
 
 **PayMEError:**(lỗi trong quá trình thao tác Miniapp)
+
 | **Thuộc tính** | **Kiểu dữ liệu** | **Giải thích** |
 |-------------------|-----------------------------------------|-------------------------------------------------------------------------------|
 | **type** | enum "MiniApp", "UserCancel", "Network" | Nhóm lỗi: lỗi trong Miniapp, người dùng đóng Miniapp hoặc lỗi do kết nối mạng |  
@@ -299,15 +325,16 @@ PaymeMiniappFlutter.open(openingType, openingParam);
 
 | **Tham số**         | **Bắt buộc** | **Kiểu dữ liệu**         | **Giải thích**                                                       |
 | ------------------- | ------------ | ------------------------ | -------------------------------------------------------------------- |
-| **openingType**        | Có           | PayMEOpeningType | Mở Miniapp theo giao diện toàn màn hình hoặc modal truợt từ dưới lên |
+| **openingType**        | Có           | PayMEOpeningType | Mở Miniapp theo giao diện toàn màn hình hoặc modal trượt từ dưới lên |
 | **openingParam** | Có           | PayMEOpeningParam | Thông tin thêm tùy vào loại action                                   |
 
 Chi tiết các PayMEOpeningParam:
 
 **OPEN:** đối tác dùng action này khi muốn mở giao diện trang chủ ví PayME để sử dụng các dịch vụ tiện ích của PayME. Nếu chưa kích hoạt tài khoản ví PayME thì kích hoạt, nếu đã kích hoạt thì mở giao diện trang chủ ví PayME
+
 | **Thuộc tính** | **Bắt buộc** | **Kiểu dữ liệu** | **Giải thích** |
 |---------------------|--------------|------------------|------------------------------|
-| **phone** | Có | String | Số điện thoại của tài khoản |
+| **identityToken** | Có | String | Chuỗi định danh do PayME ký (xem mục identityToken) |
 
 Ví dụ:
 ```dart
@@ -316,25 +343,26 @@ import 'package:payme_miniapp_flutter/payme_miniapp_type.dart';
 
 Future<void> onOpenMiniApp() async {
     PayMEOpeningParam openingParam =
-        PayMEOpeningParam.open(phone: '0123456789');
+        PayMEOpeningParam.open(identityToken: '<identityToken>');
 
     await PaymeMiniappFlutter.open(PayMEOpeningType.modal, openingParam);
 }
 ```
 
 **PAY:** đối tác dùng action này khi muốn mở giao diện thanh toán của Miniapp
+
 | **Thuộc tính** | **Bắt buộc** | **Kiểu dữ liệu** | **Giải thích** |
 |---------------------|--------------|------------------|--------------------------------------------|
-| **phone** | Có | String | Số điện thoại của tài khoản |
-| **data** | Có | PaymentData | Thông tin thêm để phục vụ việc thanh toán |
+| **identityToken** | Có | String | Chuỗi định danh do PayME ký (xem mục identityToken) |
+| **data** | Có | PayMEPaymentParam | Thông tin thêm để phục vụ việc thanh toán |
 
-Chi tiết PaymentData:
+Chi tiết PayMEPaymentParam:
+
 | **Thuộc tính** | **Bắt buộc** | **Kiểu dữ liệu** | **Giải thích** |
 |---------------------|--------------|------------------|--------------------------------------------------------------------------------------|
 | **transactionId** | Có | String | Mã giao dịch |  
 | **amount** | Có | Int | Tổng số tiền giao dịch |  
 | **note** | Không | String | Ghi chú của giao dịch |
-| **extraData** | Không | Object | Dữ liệu bổ sung do đối tác quy định, dữ liệu này sẽ được trả về đối tác khi thanh toán thành công (từ version 1.1.0 trở về sau) |
 | **ipnUrl** | Không | String | Đường dẫn để server PayME ipn đến khi giao dịch có tiến triển (thành công/thất bại) |
 | **isShowResult** | Không | Boolean | Có hiển thị màn hình kết quả của PayME không? (Default: true) |
 
@@ -345,7 +373,7 @@ import 'package:payme_miniapp_flutter/payme_miniapp_type.dart';
 
 Future<void> onPay() async {
     PayMEOpeningParam openingParam = PayMEOpeningParam.pay(
-        phone: '0123456789',
+        identityToken: '<identityToken>',
         data: PayMEPaymentParam(
             amount: 10000,
             transactionId: "121212",
@@ -363,13 +391,14 @@ Future<void> onPay() async {
   
 | **Thuộc tính** | **Bắt buộc** | **Kiểu dữ liệu** | **Giải thích** |
 |---------------------|--------------|------------------|--------------------------------------------|
-| **data** | Có | PaymentDirectData | Thông tin thêm để phục vụ việc thanh toán |
+| **identityToken** | Không | String | Chuỗi định danh do PayME ký. Có thì trả được bằng ví PayME, không có thì thanh toán như khách vãng lai |
+| **data** | Có | PayMEPaymentDirectParam | Thông tin thêm để phục vụ việc thanh toán |
 
-Chi tiết PaymentDirectData:
+Chi tiết PayMEPaymentDirectParam:
+
 | **Thuộc tính** | **Bắt buộc** | **Kiểu dữ liệu** | **Giải thích** |
 |---------------------|--------------|------------------|--------------------------------------------------------------------------------------|
 | **transaction** | Có | String | Mã giao dịch |
-| **extraData** | Không | Object | Dữ liệu bổ sung do đối tác quy định, dữ liệu này sẽ được trả về đối tác khi thanh toán thành công (từ version 1.1.0 trở về sau) |
 | **isShowResult** | Không | Boolean | Có hiển thị màn hình kết quả của PayME không? (Default: true) |
 
 Ví dụ:
@@ -392,16 +421,18 @@ Future<void> onPayment() async {
 
 | **Thuộc tính** | **Bắt buộc** | **Kiểu dữ liệu** | **Giải thích**                            |
 | -------------- | ------------ | ---------------- | ----------------------------------------- |
-| **data**       | Có           | TransferQRData   | Thông tin thêm để phục vụ việc thanh toán |
+| **identityToken** | Có        | String           | Chuỗi định danh do PayME ký (xem mục identityToken) |
+| **data**       | Có           | PayMETransferQRParam   | Thông tin thêm để phục vụ việc thanh toán |
 
-Chi tiết TransferQRData:
+Chi tiết PayMETransferQRParam:
+
 | **Thuộc tính** | **Bắt buộc** | **Kiểu dữ liệu** | **Giải thích** |
 |---------------------|--------------|------------------|--------------------------------------------------------------------------------------|
 | **amount** | Có | Int | Số tiền giao dịch (nếu không có số tiền thì truyền 0) |
 | **bankNumber** | Có | String | Số thẻ ngân hàng |
 | **swiftCode** | Có | String | Mã swiftCode của ngân hàng |
 | **cardHolder** | Có | String | Tên chủ thẻ |
-| **partnerTransaction** | No | String | Mã giao dịch của đối tác |
+| **partnerTransaction** | Không | String | Mã giao dịch của đối tác |
 | **note** | Không | String | Ghi chú của giao dịch |
 | **extraData** | Không | Object | Dữ liệu bổ sung do đối tác quy định, dữ liệu này sẽ được trả về đối tác khi thanh toán thành công |
 | **isShowResult** | Không | Boolean | Có hiển thị màn hình kết quả của PayME không? (Default: true) |
@@ -413,7 +444,7 @@ import 'package:payme_miniapp_flutter/payme_miniapp_type.dart';
 
 Future<void> onOpenTransferQR() async {
     PayMEOpeningParam openingParam = PayMEOpeningParam.transferQR(
-        phone: '0795550300',
+        identityToken: '<identityToken>',
         data: PayMETransferQRParam(
             amount: 20000,
             bankNumber: "9704000000000018",
@@ -426,10 +457,11 @@ Future<void> onOpenTransferQR() async {
 ```
 
 **DEPOSIT:** đối tác dùng action này khi muốn mở giao diện nạp tiền vào ví PayME
+
 | **Thuộc tính** | **Bắt buộc** | **Kiểu dữ liệu** | **Giải thích** |
 |---------------------|--------------|--------------------------------------|----------------------------------|
-| **phone** | Có | String | Số điện thoại của tài khoản |
-| **additionalData** | Có | PayMEPayParam | Thông tin thêm để phục vụ việc |
+| **identityToken** | Có | String | Chuỗi định danh do PayME ký (xem mục identityToken) |
+| **data** | Có | PayMEPayParam | Thông tin thêm của giao dịch |
 
 Ví dụ:
 ```dart
@@ -438,17 +470,18 @@ import 'package:payme_miniapp_flutter/payme_miniapp_type.dart';
 
 Future<void> onOpenDeposit() async {
     PayMEOpeningParam openingParam = PayMEOpeningParam.deposit(
-        phone: '0795550300', data: PayMEPayParam(amount: 10000));
+        identityToken: '<identityToken>', data: PayMEPayParam(amount: 10000));
 
     await PaymeMiniappFlutter.open(PayMEOpeningType.modal, openingParam);
 }
 ```
 
 **WITHDRAW:** đối tác dùng action này khi muốn mở giao diện rút tiền ra ví PayME
+
 | **Thuộc tính** | **Bắt buộc** | **Kiểu dữ liệu** | **Giải thích** |
 |---------------------|--------------|--------------------------------------|----------------------------------|
-| **phone** | Có | String | Số điện thoại của tài khoản |
-| **additionalData** | Có | PayMEPayParam | Thông tin thêm để phục vụ việc |
+| **identityToken** | Có | String | Chuỗi định danh do PayME ký (xem mục identityToken) |
+| **data** | Có | PayMEPayParam | Thông tin thêm của giao dịch |
 
 Ví dụ:
 ```dart
@@ -457,17 +490,18 @@ import 'package:payme_miniapp_flutter/payme_miniapp_type.dart';
 
 Future<void> onOpenWithdraw() async {
     PayMEOpeningParam openingParam = PayMEOpeningParam.withdraw(
-        phone: '0795550300', data: PayMEPayParam(amount: 10000));
+        identityToken: '<identityToken>', data: PayMEPayParam(amount: 10000));
 
     await PaymeMiniappFlutter.open(PayMEOpeningType.modal, openingParam);
 }
 ```
 
 **TRANSFER:** đối tác dùng action này khi muốn mở giao diện chuyển tiền
+
 | **Thuộc tính** | **Bắt buộc** | **Kiểu dữ liệu** | **Giải thích** |
 |---------------------|--------------|--------------------------------------|----------------------------------|
-| **phone** | Có | String | Số điện thoại của tài khoản |
-| **additionalData** | Có | PayMEPayParam | Thông tin thêm để phục vụ việc |
+| **identityToken** | Có | String | Chuỗi định danh do PayME ký (xem mục identityToken) |
+| **data** | Có | PayMEPayParam | Thông tin thêm của giao dịch |
 
 Ví dụ:
 ```dart
@@ -476,24 +510,26 @@ import 'package:payme_miniapp_flutter/payme_miniapp_type.dart';
 
 Future<void> onOpenTransfer() async {
     PayMEOpeningParam openingParam = PayMEOpeningParam.transfer(
-        phone: '0795550300', data: PayMEPayParam(amount: 10000));
+        identityToken: '<identityToken>', data: PayMEPayParam(amount: 10000));
 
     await PaymeMiniappFlutter.open(PayMEOpeningType.modal, openingParam);
 }
 ```
 
 Chi tiết PayMEPayParam:
+
 | **Thuộc tính** | **Bắt buộc** | **Kiểu dữ liệu** | **Giải thích** |
 |---------------------|--------------|------------------|-------------------------------------------------------|
 | **description** | Không | String | Miêu tả giao dịch |  
 | **amount** | Không | Int | Tổng số tiền giao dịch |
-| **extraData** | Không | Object | Dữ liệu bổ sung do đối tác quy định, dữ liệu này sẽ được trả về đối tác khi thanh toán thành công (từ version 1.1.0 trở về sau) |
+| **isBackToApp** | Không | Boolean | Quay về app đối tác sau khi hoàn tất |
 | **isShowResult** | Không | Boolean | Có hiển thị màn hình kết quả của PayME không? (Default: true) |
 
 **KYC:** đối tác dùng action này khi muốn mở giao diện kyc
+
 | **Thuộc tính** | **Bắt buộc** | **Kiểu dữ liệu** | **Giải thích** |
 |---------------------|--------------|--------------------------------------|----------------------------------|
-| **phone** | Có | String | Số điện thoại của tài khoản |
+| **identityToken** | Có | String | Chuỗi định danh do PayME ký (xem mục identityToken) |
 
 Ví dụ:
 ```dart
@@ -501,23 +537,25 @@ import 'package:payme_miniapp_flutter/payme_miniapp_flutter.dart';
 import 'package:payme_miniapp_flutter/payme_miniapp_type.dart';
 
 Future<void> onOpenKYC() async {
-    PayMEOpeningParam openingParam = PayMEOpeningParam.kyc(phone: '0795550300');
+    PayMEOpeningParam openingParam = PayMEOpeningParam.kyc(identityToken: '<identityToken>');
 
     await PaymeMiniappFlutter.open(PayMEOpeningType.modal, openingParam);
 }
 ```
 
-**SERVICE:** đối tác dùng action này khi muốn mở giao diện kyc
+**SERVICE:** đối tác dùng action này khi muốn mở giao diện thanh toán dịch vụ
+
 | **Thuộc tính** | **Bắt buộc** | **Kiểu dữ liệu** | **Giải thích** |
 |---------------------|--------------|--------------------------------------|----------------------------------|
-| **phone** | Có | String | Số điện thoại của tài khoản |
-| **additionalData** | Có | PayMEOpeningParam | Thông tin thêm để phục vụ việc |
+| **identityToken** | Có | String | Chuỗi định danh do PayME ký (xem mục identityToken) |
+| **data** | Có | PayMEServiceParam | Thông tin dịch vụ cần thanh toán |
 
-Chi tiết PayMEOpeningParam:
+Chi tiết PayMEServiceParam:
+
 | **Thuộc tính** | **Bắt buộc** | **Kiểu dữ liệu** | **Giải thích** |
 |---------------------|--------------|------------------|-------------------------------------------------------|
-| **code** | Không | String | Mã dịch vụ |
-| **extraData** | Không | Object | Dữ liệu bổ sung do đối tác quy định, dữ liệu này sẽ được trả về đối tác khi thanh toán thành công (từ version 1.1.0 trở về sau) |
+| **service** | Có | String | Mã dịch vụ (xem danh sách bên dưới) |
+| **isBackToApp** | Không | Boolean | Quay về app đối tác sau khi hoàn tất |
 | **isShowResult** | Không | Boolean | Có hiển thị màn hình kết quả của PayME không? (Default: true) |
 
 Danh sách mã dịch vụ:
@@ -539,7 +577,7 @@ import 'package:payme_miniapp_flutter/payme_miniapp_flutter.dart';
 import 'package:payme_miniapp_flutter/payme_miniapp_type.dart';
 
 Future<void> onOpenService() async {
-    PayMEOpeningParam openingParam = PayMEOpeningParam.service(phone: '0795550300', data: PayMEServiceParam(service: 'POWE'));
+    PayMEOpeningParam openingParam = PayMEOpeningParam.service(identityToken: '<identityToken>', data: PayMEServiceParam(service: 'POWE'));
 
     await PaymeMiniappFlutter.open(PayMEOpeningType.modal, openingParam);
 }
@@ -553,13 +591,13 @@ Future<void> onOpenService() async {
 import 'package:payme_miniapp_flutter/payme_miniapp_flutter.dart';
 
 Future<void> getBalance() async {
-    await PaymeMiniappFlutter.getBalance('0795550300');
+    await PaymeMiniappFlutter.getBalance('<identityToken>');
 }
 ```
 
 | **Tham số** | **Bắt buộc** | **Kiểu dữ liệu** | **Giải thích**                                                      |
 | ----------- | ------------ | ---------------- | ------------------------------------------------------------------- |
-| **phone**   | Có           | String           | Số điện thoại của tài khoản cần lấy số dư ví (không cần format +84) |
+| **identityToken** | Có     | String           | Chuỗi định danh do PayME ký cho tài khoản cần lấy thông tin (xem mục identityToken) |
 
 ### Hàm getAccountInfo
 
@@ -569,13 +607,13 @@ Future<void> getBalance() async {
 import 'package:payme_miniapp_flutter/payme_miniapp_flutter.dart';
 
 Future<void> getAccountInfo() async {
-    await PaymeMiniappFlutter.getAccountInfo('0795550300');
+    await PaymeMiniappFlutter.getAccountInfo('<identityToken>');
 }
 ```
 
 | **Tham số** | **Bắt buộc** | **Kiểu dữ liệu** | **Giải thích**                                                      |
 | ----------- | ------------ | ---------------- | ------------------------------------------------------------------- |
-| **phone**   | Có           | String           | Số điện thoại của tài khoản cần lấy số dư ví (không cần format +84) |
+| **identityToken** | Có     | String           | Chuỗi định danh do PayME ký cho tài khoản cần lấy thông tin (xem mục identityToken) |
 
 
 ### Hàm setLanguage (từ phiên bản 1.0.14 trở về sau)
