@@ -6,13 +6,16 @@ Plugin Flutter `payme_miniapp_flutter` giúp ứng dụng của đối tác mở
 
 | Thành phần | Phiên bản |
 | --- | --- |
-| `payme_miniapp_flutter` (pub.dev) | **3.0.0** |
-| PayME Miniapp iOS (CocoaPods `PayME-Miniapp`) | 0.8.1 |
-| PayME Miniapp Android (`com.github.PayME-Miniapp:native-android`) | 0.8.2 |
+| `payme_miniapp_flutter` (pub.dev) | **3.0.1** |
+| PayME Miniapp iOS (CocoaPods `PayME-Miniapp`) | 0.8.3 |
+| PayME Miniapp Android (`com.github.PayME-Miniapp:native-android`) | 0.8.4 |
 | PayME SDK | 1.0.24 |
 
 > [!IMPORTANT]
 > 3.0.0 là bản không tương thích ngược với 2.x: mọi chỗ trước đây nhận số điện thoại (`phone`) nay nhận `identityToken`. Xem [Nâng cấp từ 2.x](#nâng-cấp-từ-2x).
+
+> [!WARNING]
+> **3.0.1 đổi cách báo lỗi của các hàm.** `init`, `open`, `close`, `getBalance`, `getAccountInfo`, `setLanguage` hoàn tất với `null` khi thành công và **ném `PlatformException`** khi lỗi (thiếu/sai tham số, chưa `init`...). Trước 3.0.1, plugin tự bắt lỗi, chỉ in `debugPrint` và trả `null`. Hãy bọc các lời gọi bằng `try/catch`; xem [Lỗi phía plugin](#lỗi-phía-plugin-platformexception).
 
 ## Mục lục
 
@@ -24,7 +27,6 @@ Plugin Flutter `payme_miniapp_flutter` giúp ứng dụng của đối tác mở
 - [Cấu hình ứng dụng](#cấu-hình-ứng-dụng)
   - [iOS: Info.plist](#ios-infoplist)
   - [iOS: Capabilities](#ios-capabilities)
-  - [iOS: Background fetch và AppDelegate](#ios-background-fetch-và-appdelegate)
   - [Android: quyền, Activity và ProGuard](#android-quyền-activity-và-proguard)
 - [Bắt đầu nhanh](#bắt-đầu-nhanh)
 - [identityToken](#identitytoken)
@@ -41,6 +43,8 @@ Plugin Flutter `payme_miniapp_flutter` giúp ứng dụng của đối tác mở
   - [onResponse và onError](#onresponse-và-onerror)
   - [Hằng số](#hằng-số)
 - [Mã lỗi](#mã-lỗi)
+  - [Lỗi nhận qua onError](#lỗi-nhận-qua-onerror)
+  - [Lỗi phía plugin (PlatformException)](#lỗi-phía-plugin-platformexception)
 - [Nâng cấp từ 2.x](#nâng-cấp-từ-2x)
 - [Lịch sử thay đổi và hỗ trợ](#lịch-sử-thay-đổi-và-hỗ-trợ)
 
@@ -67,12 +71,12 @@ hoặc khai báo trong `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  payme_miniapp_flutter: ^3.0.0
+  payme_miniapp_flutter: ^3.0.1
 ```
 
 ### iOS: Podfile
 
-Plugin kéo pod `PayME-Miniapp` 0.8.1. Một số pod phụ thuộc phải build dưới dạng dynamic framework. Cập nhật `ios/Podfile`:
+Plugin kéo pod `PayME-Miniapp` 0.8.3. Một số pod phụ thuộc phải build dưới dạng dynamic framework. Cập nhật `ios/Podfile`:
 
 ```ruby
 platform :ios, '13.0'
@@ -249,54 +253,19 @@ Trong Xcode, chọn target `Runner` > **Signing & Capabilities** > nhấn **+ Ca
 
    ![Near Field Communication Tag Reading](./documents/capabilities2.png)
 
-2. **Background Modes**, bật **Background fetch** (PayME Miniapp tải bản cập nhật ở nền).
-
-   ![Background Modes](./documents/capabilities1.png)
-
-   ![Background fetch](./documents/background_fetch.png)
-
-### iOS: Background fetch và AppDelegate
-
-Để Miniapp hoàn tất việc tải bản cập nhật ở nền, thêm handler `handleEventsForBackgroundURLSession` vào `ios/Runner/AppDelegate.swift`:
-
-```swift
-import Flutter
-import UIKit
-
-@main
-@objc class AppDelegate: FlutterAppDelegate {
-  override func application(
-    _ application: UIApplication,
-    didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
-  ) -> Bool {
-    GeneratedPluginRegistrant.register(with: self)
-    return super.application(application, didFinishLaunchingWithOptions: launchOptions)
-  }
-
-  override func application(
-    _ application: UIApplication,
-    handleEventsForBackgroundURLSession identifier: String,
-    completionHandler: @escaping () -> Void
-  ) {
-    completionHandler()
-  }
-}
-```
-
-Nếu AppDelegate viết bằng Objective-C (`AppDelegate.m`):
-
-```objective-c
-- (void)application:(UIApplication *)application
-    handleEventsForBackgroundURLSession:(NSString *)identifier
-                      completionHandler:(void (^)(void))completionHandler {
-  completionHandler();
-}
-```
+SDK không cần **Background Modes** (Background fetch) và không cần xử lý `handleEventsForBackgroundURLSession` trong `AppDelegate`: bản cập nhật Miniapp được tải trong lúc mở, không tải nền.
 
 ### Android: quyền, Activity và ProGuard
 
 - **Quyền:** thư viện native đã khai báo sẵn các quyền cần thiết (Internet, máy ảnh, danh bạ, NFC, ...) trong manifest của nó; Gradle tự gộp vào ứng dụng. Không cần khai báo thêm.
-- **Activity:** `MainActivity` giữ nguyên `FlutterActivity`, không cần đổi sang `FlutterFragmentActivity`. Trên Android, plugin luôn mở Miniapp bằng một Activity riêng (toàn màn hình).
+- **Activity:** `PayMEOpeningType.screen` chạy với `FlutterActivity`. `PayMEOpeningType.modal` cần `MainActivity` kế thừa `FlutterFragmentActivity`; nếu không, `open` ném `PlatformException` `MINIAPP_CANNOT_PRESENT` (Miniapp không mở).
+
+  ```kotlin
+  import io.flutter.embedding.android.FlutterFragmentActivity
+
+  class MainActivity : FlutterFragmentActivity()
+  ```
+
 - **ProGuard / R8:** nếu bật `minifyEnabled true`, thêm vào `android/app/proguard-rules.pro`:
 
 ```proguard
@@ -314,27 +283,36 @@ Nếu AppDelegate viết bằng Objective-C (`AppDelegate.m`):
 
 ```dart
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:payme_miniapp_flutter/payme_miniapp_flutter.dart';
 import 'package:payme_miniapp_flutter/payme_miniapp_type.dart';
 
 /// Gọi server của bạn để lấy identityToken (xem mục identityToken).
 Future<String> fetchIdentityToken() async => throw UnimplementedError();
 
-void setUpPayME() {
-  PaymeMiniappFlutter.onResponse.listen((event) => debugPrint('PayME response: $event'));
+Future<void> setUpPayME() async {
+  PaymeMiniappFlutter.onResponse.listen((event) => debugPrint('PayME response: ${event['action']}'));
   PaymeMiniappFlutter.onError.listen((event) => debugPrint('PayME error: $event'));
-  PaymeMiniappFlutter.init('<APP_ID>', '<PUBLIC_KEY>', '<PRIVATE_KEY>',
-      env: PayMEEnv.SANDBOX, mode: PayMEMode.MINIAPP_SANDBOX);
+  try {
+    await PaymeMiniappFlutter.init('<APP_ID>', '<PUBLIC_KEY>', '<PRIVATE_KEY>',
+        env: PayMEEnv.SANDBOX); // không truyền mode: SANDBOX dùng PayMEMode.MINIAPP_SANDBOX
+  } on PlatformException catch (e) {
+    debugPrint('PayME init lỗi ${e.code}: ${e.message}');
+  }
 }
 
 Future<void> openWallet() async {
   final identityToken = await fetchIdentityToken();
-  PaymeMiniappFlutter.open(
-      PayMEOpeningType.screen, PayMEOpeningParam.open(identityToken: identityToken));
+  try {
+    await PaymeMiniappFlutter.open(
+        PayMEOpeningType.screen, PayMEOpeningParam.open(identityToken: identityToken));
+  } on PlatformException catch (e) {
+    debugPrint('PayME open lỗi ${e.code}: ${e.message}');
+  }
 }
 ```
 
-Gọi `setUpPayME()` một lần, càng sớm càng tốt khi ứng dụng khởi động (ví dụ trong `initState` của màn hình gốc): `init` đồng thời kiểm tra và tải bản Miniapp mới nhất. Kết quả và lỗi của mọi thao tác đều trả về qua hai stream `onResponse` và `onError`, không qua giá trị trả về của hàm.
+Gọi `setUpPayME()` một lần khi ứng dụng khởi động (ví dụ trong `initState` của màn hình gốc). Kết quả và lỗi nghiệp vụ (từ SDK) trả về qua hai stream `onResponse` và `onError`; lỗi tham số hoặc gọi khi chưa `init` làm Future ném `PlatformException`.
 
 ## identityToken
 
@@ -371,9 +349,10 @@ Mọi hàm là `static` trên lớp `PaymeMiniappFlutter` (`package:payme_miniap
 
 ### Lưu ý chung về Future
 
-- Các hàm trả về `Future<dynamic>` nhưng **không mang dữ liệu**. Kết quả và lỗi nghiệp vụ đến qua [`onResponse` và `onError`](#onresponse-và-onerror).
-- Plugin tự bắt mọi `PlatformException` từ native, chỉ in ra bằng `debugPrint` và trả `null`. Ứng dụng **không nhận được exception** khi gọi các hàm này (xem [Mã lỗi](#mã-lỗi)).
-- Trên một số nền tảng, Future có thể không bao giờ hoàn tất (ví dụ `init`, `open` trên iOS). Không đặt logic quan trọng phía sau `await` của các hàm này; gọi xong là đủ.
+- Các hàm trả về `Future<dynamic>` nhưng **không mang dữ liệu**: thành công thì hoàn tất với `null`. Kết quả và lỗi nghiệp vụ đến qua [`onResponse` và `onError`](#onresponse-và-onerror).
+- Khi lỗi phía plugin (thiếu/sai tham số, chưa `init`...), Future **ném `PlatformException`** với `code` ở bảng [Lỗi phía plugin](#lỗi-phía-plugin-platformexception). Bọc lời gọi bằng `try { ... } on PlatformException catch (e) { ... }`. Trước 3.0.1, plugin tự bắt lỗi và trả `null`.
+- Các hàm là `async`: lỗi Dart khi tạo tham số (ví dụ `extraData` không encode được JSON) cũng trả qua Future, không ném ngay lúc gọi.
+- Từ 3.0.1, mọi lời gọi đều hoàn tất trên cả iOS và Android (trước đó một số Future không bao giờ hoàn tất). Future hoàn tất nghĩa là lệnh đã được chuyển cho SDK, không có nghĩa thao tác (ví dụ thanh toán) đã xong.
 
 ### init
 
@@ -381,7 +360,7 @@ Mọi hàm là `static` trên lớp `PaymeMiniappFlutter` (`package:payme_miniap
 static Future<dynamic> init(String appId, String publicKey, String privateKey,
     {String? locale = PayMELocale.VI,
     String? env = PayMEEnv.PRODUCTION,
-    String? mode = 'miniapp_product'});
+    String? mode});
 ```
 
 | Tham số | Bắt buộc | Kiểu | Mặc định | Mô tả |
@@ -391,7 +370,9 @@ static Future<dynamic> init(String appId, String publicKey, String privateKey,
 | `privateKey` | Có | `String` | | Private key RSA của đối tác, viết trên một dòng |
 | `locale` | Không | `String` | `PayMELocale.VI` | Ngôn ngữ ban đầu: `PayMELocale.VI`, `PayMELocale.EN` |
 | `env` | Không | `String` | `PayMEEnv.PRODUCTION` | `PayMEEnv.SANDBOX` hoặc `PayMEEnv.PRODUCTION` |
-| `mode` | Không | `String` | `PayMEMode.MINIAPP_PRODUCT` | `PayMEMode.MINIAPP_SANDBOX` hoặc `PayMEMode.MINIAPP_PRODUCT`; dùng cặp khớp với `env` |
+| `mode` | Không | `String` | Theo `env` | Kênh cập nhật Miniapp. Không truyền (hoặc `null`): `PayMEEnv.SANDBOX` dùng `PayMEMode.MINIAPP_SANDBOX`, còn lại dùng `PayMEMode.MINIAPP_PRODUCT`. Truyền thì giữ nguyên giá trị đã truyền |
+
+`appId`, `publicKey` hoặc `privateKey` rỗng: ném `PlatformException` `MISSING_INFO`. `locale`, `env`, `mode` là `null` thì dùng giá trị mặc định. Gọi lại `init` với cùng `appId`/`publicKey`/`privateKey` chỉ cập nhật `env`/`mode`/`locale`, miniapp đang mở vẫn `close()` được; trên iOS, đổi key thì miniapp đang mở bị đóng trước.
 
 > [!WARNING]
 > Không commit key thật vào mã nguồn public, README hay ảnh chụp màn hình. Dùng bộ key PayME cấp riêng cho từng môi trường.
@@ -404,20 +385,35 @@ static Future<dynamic> open(String type, PayMEOpeningParam openingParam);
 
 | Tham số | Bắt buộc | Kiểu | Mô tả |
 | --- | --- | --- | --- |
-| `type` | Có | `String` | `PayMEOpeningType.screen` (toàn màn hình) hoặc `PayMEOpeningType.modal` (trượt từ dưới lên). Trên Android plugin luôn mở toàn màn hình. |
+| `type` | Có | `String` | `PayMEOpeningType.screen` (toàn màn hình) hoặc `PayMEOpeningType.modal` (trượt từ dưới lên). Không phân biệt hoa thường; giá trị khác được hiểu là `screen`. Android: `modal` cần `FlutterFragmentActivity` (xem [Activity](#android-quyền-activity-và-proguard)). |
 | `openingParam` | Có | `PayMEOpeningParam` | Thao tác cần mở, tạo bằng một trong các named constructor bên dưới |
 
 ```dart
-void payOrder(String identityToken) {
-  PaymeMiniappFlutter.open(
-    PayMEOpeningType.screen,
-    PayMEOpeningParam.pay(
-      identityToken: identityToken,
-      data: PayMEPaymentParam(amount: 10000, transactionId: '<PARTNER_ORDER_ID>'),
-    ),
-  );
+Future<void> payOrder(String identityToken) async {
+  try {
+    await PaymeMiniappFlutter.open(
+      PayMEOpeningType.screen,
+      PayMEOpeningParam.pay(
+        identityToken: identityToken,
+        data: PayMEPaymentParam(amount: 10000, transactionId: '<PARTNER_ORDER_ID>'),
+      ),
+    );
+  } on PlatformException catch (e) {
+    // INVALID_PARAM, PAYME_NOT_INITIALIZED, ...: Miniapp không mở
+    debugPrint('PayME open lỗi ${e.code}: ${e.message}');
+  }
 }
 ```
+
+`open` ném `PlatformException` khi: thiếu `action` (`MISSING_INFO`), action không hỗ trợ hoặc `data` thiếu/sai (`INVALID_PARAM`), chưa `init` (`PAYME_NOT_INITIALIZED`), hoặc không hiển thị được Miniapp (`MINIAPP_CANNOT_PRESENT`: iOS không có view controller để present; Android mở `modal` khi chưa có Activity, `MainActivity` không kế thừa `FlutterFragmentActivity` hoặc Activity đã lưu trạng thái). Khi đó Miniapp không mở.
+
+#### Mở, đóng và nút back
+
+- **Mỗi lúc chỉ một Miniapp.** Gọi `open` khi đang có Miniapp mở (iOS: hoặc đang kiểm tra/tải bản cập nhật trước khi mở): Future vẫn hoàn tất, `onError` trả `MINIAPP_ALREADY_OPEN`, Miniapp đang mở giữ nguyên.
+- **Mở lại ngay trong callback đóng** (`USER_CANCEL`, hoặc kết quả làm Miniapp đóng) hay ngay sau `close()` được. iOS hoãn lần mở đến khi Miniapp cũ đã đóng hẳn; Android mở ngay.
+- **Một kết quả đóng mỗi phiên.** Mỗi lần mở chỉ có một kết quả đóng: `USER_CANCEL`, hoặc `onResponse`/`onError` làm Miniapp đóng. Miniapp chỉ bị che (máy ảnh eKYC, webview phụ) rồi hiện lại thì không phát `USER_CANCEL`.
+- **Nút back Android** (cả `screen` và `modal`): Miniapp đóng popup trên cùng (hoặc chặn back ở màn đang thanh toán); nếu không có, lùi về trang trước trong Miniapp; hết trang thì đóng Miniapp và `onError` trả `USER_CANCEL`.
+- iOS: plugin mở Miniapp từ view controller trên cùng của ứng dụng (mở được khi đang có màn hình present khác).
 
 ### PayMEOpeningParam
 
@@ -467,7 +463,7 @@ void buildParams(String identityToken) {
 
 ### Các lớp tham số
 
-Số tiền tính bằng VND và phải là số nguyên (kể cả khi kiểu Dart là `double`).
+Số tiền tính bằng VND và phải là số nguyên, kể cả khi kiểu Dart là `double` (`20000` hoặc `20000.0`), tối đa 2.147.483.647. Số lẻ (ví dụ `20000.5`) hoặc vượt giới hạn làm `open` ném `INVALID_PARAM` trên cả iOS và Android, kể cả với `amount` tuỳ chọn của `PayMEPayParam`.
 
 **`PayMEPaymentParam`** (dùng cho `pay`)
 
@@ -565,7 +561,12 @@ static Future<dynamic> setLanguage(String language);
 static Future<dynamic> close();
 ```
 
-Đóng Miniapp đang mở. **Hiện chỉ có tác dụng trên Android**; trên iOS plugin chưa hỗ trợ lệnh này (lời gọi bị bỏ qua).
+Đóng Miniapp đang mở, trên cả iOS và Android (iOS hỗ trợ từ 3.0.1). Không có Miniapp nào mở thì không làm gì. Gọi trước `init`: ném `PAYME_NOT_INITIALIZED`.
+
+| | iOS | Android |
+| --- | --- | --- |
+| Cách đóng | Đóng chính Miniapp, kể cả khi đang bị che (máy ảnh, màn hình khác); không dismiss nhầm màn hình của ứng dụng | Đóng Miniapp (`screen` và `modal`) |
+| `onError` | `USER_CANCEL` một lần khi Miniapp đã đóng | Không phát |
 
 ### onResponse và onError
 
@@ -579,17 +580,14 @@ static Stream<dynamic> get onError;
 | Stream | Kiểu sự kiện | Nội dung |
 | --- | --- | --- |
 | `onResponse` | `Map` | `action` (`String`) cộng các trường kết quả của thao tác đó, ví dụ `{action: GET_BALANCE, linked: true, balance: 150000, message: ...}` |
-| `onError` | `Map` | `{action: String, code: String, description: String}` |
-| `onError` (chỉ Android, lỗi phía plugin) | `String` | Thông điệp lỗi, ví dụ `Missing info`, `Missing action` |
+| `onError` | `Map` | `{action: String, code: String, description: String}` trên cả hai nền tảng |
 
 Giá trị `action`: `PAYME`, `OPEN`, `PAY`, `PAYMENT`, `TRANSFER_QR`, `SERVICE`, `DEPOSIT`, `WITHDRAW`, `TRANSFER`, `KYC`, `GET_BALANCE`, `GET_ACCOUNT_INFO`.
 
+Mảng JSON trong `onResponse` được trả dưới dạng `List`, giá trị `null` giữ là `null` (trước 3.0.1, Android bỏ cả response có mảng). Lỗi kiểm tra tham số không đi qua `onError` mà qua `PlatformException` của Future.
+
 ```dart
 final errorSub = PaymeMiniappFlutter.onError.listen((event) {
-  if (event is! Map) {
-    debugPrint('PayME plugin error: $event'); // Android: lỗi tham số phía plugin
-    return;
-  }
   final code = event['code'] as String?;
   switch (code) {
     case '401':
@@ -619,38 +617,51 @@ final errorSub = PaymeMiniappFlutter.onError.listen((event) {
 
 ## Mã lỗi
 
-**Lỗi nhận qua `onError`** (`event['code']`)
+### Lỗi nhận qua `onError`
+
+Mã lỗi nằm ở `event['code']`.
 
 | Mã | Khi nào | Cách xử lý |
 | --- | --- | --- |
 | `401` | `identityToken` sai hoặc hết hạn (mở Miniapp, `getBalance`, `getAccountInfo`). Miniapp tự đóng. | Gọi server lấy `identityToken` mới rồi thực hiện lại. |
 | `IDENTITY_TOKEN_REQUIRED` | `identityToken` rỗng ở thao tác bắt buộc | Kiểm tra luồng lấy chuỗi; không mở Miniapp khi chưa có chuỗi. |
-| `USER_CANCEL` | Miniapp đóng (người dùng đóng hoặc thoát) | Coi là sự kiện đóng Miniapp, không phải lỗi hệ thống. Trên iOS mã này được gửi mỗi khi màn hình Miniapp đóng. |
-| `SYSTEM_CANCEL` | (iOS) Miniapp không khởi động được | Thử mở lại; nếu lặp lại, báo PayME. |
-| `CONNECTION_LOST`, `TIMED_OUT`, `NO_RESPONSE` | Lỗi mạng hoặc server không phản hồi | Báo người dùng kiểm tra kết nối và thử lại. |
-| `ENCODE_FAILED`, `DECODE_FAILED` | Lỗi mã hoá hoặc giải mã dữ liệu, thường do sai key hoặc sai môi trường | Kiểm tra `appId`, cặp key và cặp `env`/`mode`. |
+| `USER_CANCEL` | Miniapp đóng (nút đóng, nút back Android khi hết trang, chạm ngoài `modal`); iOS: cả khi gọi `close()` | Coi là sự kiện đóng Miniapp, không phải lỗi hệ thống. Báo một lần mỗi phiên. |
+| `SYSTEM_CANCEL` | (iOS) Miniapp không khởi động được (ví dụ web server cục bộ không chạy được). Miniapp tự đóng | Thử mở lại; nếu lặp lại, báo PayME. |
+| `MINIAPP_ALREADY_OPEN` | Gọi `open` khi đang có Miniapp mở. Miniapp mới không mở, Miniapp đang mở giữ nguyên | Đợi Miniapp hiện tại đóng, hoặc gọi `close()` rồi mở lại. |
+| `MINIAPP_CANNOT_PRESENT` | SDK không hiển thị được Miniapp dù plugin đã chuyển lệnh (ví dụ Android lỗi khi hiện màn hình) | Gọi `open` khi ứng dụng đang ở foreground. |
+| `CONNECTION_LOST`, `TIMED_OUT`, `NO_RESPONSE` (iOS) | Lỗi mạng hoặc server không phản hồi | Báo người dùng kiểm tra kết nối và thử lại. |
+| `ENCODE_FAILED` (iOS), `DECODE_FAILED` | Lỗi mã hoá hoặc giải mã dữ liệu, thường do sai key hoặc sai môi trường | Kiểm tra `appId`, cặp key và cặp `env`/`mode`. |
 | `SERVER` (iOS), `SERVER_ERROR` (Android) | Server PayME trả lỗi | Thử lại sau; hiển thị `description`. |
 | `OTHER` | Lỗi khác (ví dụ không tìm thấy thông tin tài khoản) | Hiển thị `description`. |
 | Mã khác | Lỗi nghiệp vụ do Miniapp trả về | Hiển thị `description`; liên hệ PayME nếu cần tra cứu. |
 
-**Lỗi phía plugin (`PlatformException`)**
+### Lỗi phía plugin (`PlatformException`)
 
-Các mã dưới đây do lớp native của plugin trả về qua MethodChannel. Plugin bắt chúng bên trong Dart, chỉ in bằng `debugPrint` (dạng `Error invoking method: PlatformException(...)`) và Future trả `null`; ứng dụng không nhận được exception. Trên Android, một số trường hợp còn gửi kèm một chuỗi `String` lên `onError`. Hãy kiểm tra tham số trước khi gọi và đọc log debug khi tích hợp.
+Từ 3.0.1, các mã dưới đây được ném dưới dạng `PlatformException` từ Future của hàm được gọi (`e.code`, `e.message`). Khi đó lệnh không được thực hiện (ví dụ Miniapp không mở).
+
+```dart
+try {
+  await PaymeMiniappFlutter.getBalance(identityToken);
+} on PlatformException catch (e) {
+  if (e.code == 'PAYME_NOT_INITIALIZED') {
+    // Gọi init trước rồi thử lại.
+  }
+}
+```
 
 | Mã | Nền tảng | Khi nào | Cách xử lý |
 | --- | --- | --- | --- |
-| `MISSING_INFO` | iOS, Android | Thiếu tham số (`init` thiếu key, `getBalance`/`getAccountInfo`/`setLanguage` thiếu đối số) | Truyền đủ tham số. |
-| `INVALID_PARAM` | iOS | `data` thiếu hoặc sai kiểu cho action (ví dụ `pay` không có `amount`, số tiền không nguyên) | Truyền đúng lớp tham số và trường bắt buộc. |
-| `PAYME_NOT_INITIALIZED` | iOS | Gọi `open`/`getBalance`/`getAccountInfo`/`setLanguage` trước `init` | Gọi `init` khi ứng dụng khởi động. |
-| `JSON_PARSE_ERROR` | Android | `init` nhận tham số không hợp lệ (ví dụ `locale`, `env` hoặc `mode` là `null`) | Không truyền `null`; bỏ tham số để dùng mặc định. |
-| `ERROR` | Android | Lỗi bất ngờ khi `open` | Xem log; báo PayME kèm thông tin tái hiện. |
-
-> [!NOTE]
-> Trên Android, nếu thiếu `data` bắt buộc cho `pay`, `payment`, `transferQR` hay `service`, plugin không báo `INVALID_PARAM` mà mở giao diện ví PayME. Luôn truyền đủ `data` cho các action này.
+| `MISSING_INFO` | iOS, Android | `init` có `appId`/`publicKey`/`privateKey` rỗng; `open` thiếu `action`; `getBalance`/`getAccountInfo`/`setLanguage` thiếu đối số | Truyền đủ tham số. |
+| `INVALID_PARAM` | iOS, Android | Action không hỗ trợ, hoặc `data` thiếu/sai kiểu cho `pay`, `payment`, `transferQR`, `service`; `amount` không nguyên (mọi action) | Truyền đúng lớp tham số và trường bắt buộc. |
+| `PAYME_NOT_INITIALIZED` | iOS, Android | Gọi `open`/`close`/`getBalance`/`getAccountInfo`/`setLanguage` trước `init` | Gọi `init` khi ứng dụng khởi động, đợi Future hoàn tất. |
+| `MINIAPP_CANNOT_PRESENT` | iOS, Android | `open` không hiển thị được Miniapp. iOS: không có view controller để present. Android (`modal`): chưa có Activity, `MainActivity` không kế thừa `FlutterFragmentActivity` hoặc Activity đã lưu trạng thái | Gọi `open` khi ứng dụng đang hiển thị; Android: dùng `FlutterFragmentActivity` hoặc `PayMEOpeningType.screen`. |
+| `JSON_PARSE_ERROR` | Android | Plugin không đọc được tham số của `init` hoặc `open` (hiếm gặp) | Xem log; báo PayME kèm thông tin tái hiện. |
+| `INIT_ERROR` | Android | SDK native báo lỗi khi khởi tạo | Kiểm tra bộ key và `env`; báo PayME nếu lặp lại. |
+| `OPEN_ERROR` | Android | SDK native ném lỗi khi mở Miniapp (phòng hờ; SDK thường báo lỗi mở qua `onError`) | Xem log; báo PayME kèm thông tin tái hiện. |
 
 ## Nâng cấp từ 2.x
 
-| 2.x (SDK native iOS 0.7.6 / Android 0.7.2) | 3.0.0 (SDK native iOS 0.8.1 / Android 0.8.2) |
+| 2.x (SDK native iOS 0.7.6 / Android 0.7.2) | 3.0.1 (SDK native iOS 0.8.3 / Android 0.8.4) |
 | --- | --- |
 | `PayMEOpeningParam.open(phone: phone)` | `PayMEOpeningParam.open(identityToken: identityToken)` |
 | `PayMEOpeningParam.pay(phone: phone, data: ...)` | `PayMEOpeningParam.pay(identityToken: identityToken, data: ...)` |
@@ -665,15 +676,23 @@ Các mã dưới đây do lớp native của plugin trả về qua MethodChannel
 
 Các bước nâng cấp:
 
-1. Đổi dependency thành `payme_miniapp_flutter: ^3.0.0`, chạy `flutter pub get` rồi `cd ios && pod install --repo-update`.
+1. Đổi dependency thành `payme_miniapp_flutter: ^3.0.1`, chạy `flutter pub get` rồi `cd ios && pod install --repo-update`.
 2. Dùng Xcode 26.2 trở lên để build iOS.
 3. Xây dựng endpoint trên server để gọi API `identityToken/init` của PayME và trả chuỗi cho ứng dụng (xem [identityToken](#identitytoken)).
 4. Thay mọi tham số `phone` bằng `identityToken` theo bảng trên.
 5. Xử lý thêm mã `401` và `IDENTITY_TOKEN_REQUIRED` trong `onError`.
+6. Bọc các lời gọi `init`, `open`, `close`, `getBalance`, `getAccountInfo`, `setLanguage` bằng `try/catch` `PlatformException` (xem [Lỗi phía plugin](#lỗi-phía-plugin-platformexception)).
 
-`init`, `setLanguage`, `close`, `onResponse`, `onError` và các lớp tham số `data` không thay đổi.
+Chữ ký của `init`, `setLanguage`, `close`, `onResponse`, `onError` và các lớp tham số `data` không thay đổi. Khác biệt so với 2.x ngoài `identityToken`: từ 3.0.1 các hàm ném `PlatformException` khi lỗi thay vì trả `null`.
+
+Đã dùng 3.0.0: nâng lên `^3.0.1` không cần đổi mã gọi hàm, nhưng cần thêm `try/catch` như bước 6.
 
 ## Lịch sử thay đổi và hỗ trợ
 
-- Lịch sử thay đổi: [pub.dev/packages/payme_miniapp_flutter/changelog](https://pub.dev/packages/payme_miniapp_flutter/changelog)
+| Phiên bản | Thay đổi chính |
+| --- | --- |
+| 3.0.1 | SDK native iOS 0.8.3, Android 0.8.4 (SDK 1.0.24): `USER_CANCEL` báo một lần mỗi phiên; mỗi lúc chỉ một Miniapp (`MINIAPP_ALREADY_OPEN`); Android: nút back đóng popup → lùi trang → đóng Miniapp, không còn ép ứng dụng sang giao diện sáng hay đổi ngôn ngữ của ứng dụng. Android mở được `modal` với `FlutterFragmentActivity`; không hiển thị được thì `open` ném `MINIAPP_CANNOT_PRESENT`. `mode` mặc định theo `env`. `amount` tối đa 2.147.483.647. iOS: mở từ view controller trên cùng, `close()` đóng chính Miniapp. Các hàm ném `PlatformException` khi lỗi và luôn hoàn tất; iOS hỗ trợ `close`. Android: `INVALID_PARAM` thay vì mở ví, `PAYME_NOT_INITIALIZED` khi chưa `init`, `onError` luôn là `Map`, mảng trong `onResponse` là `List`. `amount` không nguyên: `INVALID_PARAM` |
+| 3.0.0 | `identityToken` thay số điện thoại; SDK native iOS 0.8.1, Android 0.8.2 (SDK 1.0.24) |
+
+- Lịch sử thay đổi đầy đủ: [pub.dev/packages/payme_miniapp_flutter/changelog](https://pub.dev/packages/payme_miniapp_flutter/changelog)
 - Bộ key (`appId`, `publicKey`, `privateKey`), tài liệu API `identityToken/init`, API tạo giao dịch cho `PAYMENT` và tài khoản sandbox: liên hệ PayME.
