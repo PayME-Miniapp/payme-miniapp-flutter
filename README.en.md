@@ -4,7 +4,7 @@
 
 A Flutter plugin that opens PayME Miniapp (wallet, payment, top-up, withdrawal, transfer, bill payment, eKYC) in your app on iOS and Android.
 
-Current version: **3.0.1**. The plugin bundles the native SDKs (iOS `PayME-Miniapp` 0.8.3, Android `native-android` 0.8.4); your app does not need to declare them.
+Current version: **3.0.2**. The plugin bundles the native SDKs (iOS `PayME-Miniapp` 0.8.3, Android `native-android` 0.8.5); your app does not need to declare them.
 
 ## Table of contents
 
@@ -37,7 +37,7 @@ Or add it to `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  payme_miniapp_flutter: ^3.0.1
+  payme_miniapp_flutter: ^3.0.2
 ```
 
 ### iOS
@@ -199,6 +199,14 @@ In Xcode, open the `Runner` target → **Signing & Capabilities** → **+ Capabi
 ### Android
 
 No permissions to declare. The required permissions are already in the SDK, and Gradle merges them into your app.
+
+Miniapp runs on `http://localhost`, so the SDK declares a `networkSecurityConfig` that only allows cleartext to `localhost`. Your app's `android:usesCleartextTraffic` then no longer applies. If your app has its own `networkSecurityConfig`, add `tools:replace="android:networkSecurityConfig"` to `<application>` and allow cleartext to `localhost` in your file:
+
+```xml
+<domain-config cleartextTrafficPermitted="true">
+    <domain>localhost</domain>
+</domain-config>
+```
 
 ## Quick start
 
@@ -425,7 +433,7 @@ Errors come from two places: a `PlatformException` from the `Future` (`e.code`; 
 | `getAccountInfo(phone)` | `getAccountInfo(identityToken)` |
 
 1. Server: integrate the `token-init` API (contact PayME).
-2. Change the dependency to `payme_miniapp_flutter: ^3.0.1`, run `flutter pub get`, then `cd ios && pod install --repo-update`.
+2. Change the dependency to `payme_miniapp_flutter: ^3.0.2`, run `flutter pub get`, then `cd ios && pod install --repo-update`.
 3. Replace every `phone` with `identityToken`.
 4. Handle `401` and `IDENTITY_TOKEN_REQUIRED`; wrap calls in `try/catch` for `PlatformException`.
 5. Build iOS with Xcode 26.2 or later.
