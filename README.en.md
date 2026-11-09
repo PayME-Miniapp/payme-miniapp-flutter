@@ -237,7 +237,7 @@ Future<void> openWallet(String identityToken) async {
 An `identityToken` is a string PayME issues for each of your users. The app passes it every time it opens Miniapp.
 
 1. The app calls your server.
-2. Your server calls PayME's `identityToken/init` API with the user's phone number (contact PayME for the API documentation). Never call this API from the app.
+2. Your server calls PayME's `token-init` API (`POST /be/ewallet/sdk/token-init`) with the user's phone number (contact PayME for the API documentation). Never call this API from the app.
 3. The app passes the returned `identityToken` to `PayMEOpeningParam`, `getBalance` or `getAccountInfo`.
 
 | Operation | `identityToken` |
@@ -424,7 +424,7 @@ Errors come from two places: a `PlatformException` from the `Future` (`e.code`; 
 | `getBalance(phone)` | `getBalance(identityToken)` |
 | `getAccountInfo(phone)` | `getAccountInfo(identityToken)` |
 
-1. Server: integrate the `identityToken/init` API (contact PayME).
+1. Server: integrate the `token-init` API (contact PayME).
 2. Change the dependency to `payme_miniapp_flutter: ^3.0.1`, run `flutter pub get`, then `cd ios && pod install --repo-update`.
 3. Replace every `phone` with `identityToken`.
 4. Handle `401` and `IDENTITY_TOKEN_REQUIRED`; wrap calls in `try/catch` for `PlatformException`.
@@ -432,6 +432,6 @@ Errors come from two places: a `PlatformException` from the `Future` (`e.code`; 
 
 ## Support
 
-PayME Technology Corporation, email [hotro@payme.vn](mailto:hotro@payme.vn). Keys, the `identityToken/init` API documentation and the transaction API for `payment`: contact PayME.
+PayME Technology Corporation, email [hotro@payme.vn](mailto:hotro@payme.vn). Keys, the `token-init` API documentation and the transaction API for `payment`: contact PayME.
 
 Versions: [pub.dev `payme_miniapp_flutter`](https://pub.dev/packages/payme_miniapp_flutter/versions).

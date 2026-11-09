@@ -237,7 +237,7 @@ Future<void> openWallet(String identityToken) async {
 `identityToken` là chuỗi PayME cấp cho từng người dùng của bạn. Ứng dụng truyền chuỗi này mỗi lần mở Miniapp.
 
 1. Ứng dụng gọi server của bạn.
-2. Server của bạn gọi API `identityToken/init` của PayME với số điện thoại của người dùng (liên hệ PayME để nhận tài liệu API). Không gọi API này từ ứng dụng.
+2. Server của bạn gọi API `token-init` (`POST /be/ewallet/sdk/token-init`) của PayME với số điện thoại của người dùng (liên hệ PayME để nhận tài liệu API). Không gọi API này từ ứng dụng.
 3. Ứng dụng truyền `identityToken` nhận được vào `PayMEOpeningParam`, `getBalance` hoặc `getAccountInfo`.
 
 | Thao tác | `identityToken` |
@@ -424,7 +424,7 @@ Bản 3.x thay số điện thoại bằng `identityToken` và không tương th
 | `getBalance(phone)` | `getBalance(identityToken)` |
 | `getAccountInfo(phone)` | `getAccountInfo(identityToken)` |
 
-1. Server: tích hợp API `identityToken/init` (liên hệ PayME).
+1. Server: tích hợp API `token-init` (liên hệ PayME).
 2. Đổi dependency thành `payme_miniapp_flutter: ^3.0.1`, chạy `flutter pub get` rồi `cd ios && pod install --repo-update`.
 3. Thay mọi `phone` bằng `identityToken`.
 4. Xử lý lỗi `401` và `IDENTITY_TOKEN_REQUIRED`; bọc các lời gọi bằng `try/catch` `PlatformException`.
@@ -432,6 +432,6 @@ Bản 3.x thay số điện thoại bằng `identityToken` và không tương th
 
 ## Hỗ trợ
 
-PayME Technology Corporation, email [hotro@payme.vn](mailto:hotro@payme.vn). Bộ key, tài liệu API `identityToken/init` và API tạo giao dịch `payment`: liên hệ PayME.
+PayME Technology Corporation, email [hotro@payme.vn](mailto:hotro@payme.vn). Bộ key, tài liệu API `token-init` và API tạo giao dịch `payment`: liên hệ PayME.
 
 Danh sách phiên bản: [pub.dev `payme_miniapp_flutter`](https://pub.dev/packages/payme_miniapp_flutter/versions).
