@@ -4,7 +4,7 @@
 
 Plugin Flutter để mở PayME Miniapp (ví, thanh toán, nạp, rút, chuyển tiền, dịch vụ, eKYC) trong ứng dụng của bạn trên iOS và Android.
 
-Phiên bản hiện tại: **3.0.2**. Plugin đã kèm SDK native (iOS `PayME-Miniapp` 0.8.3, Android `native-android` 0.8.5), ứng dụng không cần khai báo thêm.
+Phiên bản hiện tại: **3.0.3**. Plugin đã kèm SDK native (iOS `PayME-Miniapp` 0.8.4, Android `native-android` 0.8.5), ứng dụng không cần khai báo thêm.
 
 ## Mục lục
 
@@ -37,7 +37,7 @@ Hoặc thêm vào `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  payme_miniapp_flutter: ^3.0.2
+  payme_miniapp_flutter: ^3.0.3
 ```
 
 ### iOS
@@ -433,7 +433,7 @@ Bản 3.x thay số điện thoại bằng `identityToken` và không tương th
 | `getAccountInfo(phone)` | `getAccountInfo(identityToken)` |
 
 1. Server: tích hợp API `token-init` (liên hệ PayME).
-2. Đổi dependency thành `payme_miniapp_flutter: ^3.0.2`, chạy `flutter pub get` rồi `cd ios && pod install --repo-update`.
+2. Đổi dependency thành `payme_miniapp_flutter: ^3.0.3`, chạy `flutter pub get` rồi `cd ios && pod install --repo-update`.
 3. Thay mọi `phone` bằng `identityToken`.
 4. Xử lý lỗi `401` và `IDENTITY_TOKEN_REQUIRED`; bọc các lời gọi bằng `try/catch` `PlatformException`.
 5. Build iOS bằng Xcode 26.2 trở lên.
