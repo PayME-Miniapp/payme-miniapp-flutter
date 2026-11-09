@@ -242,7 +242,6 @@ An `identityToken` is a string PayME issues for each of your users. The app pass
 
 | Operation | `identityToken` |
 | --- | --- |
-| `PayMEOpeningParam.payme()` | Not used (the user signs in) |
 | `PayMEOpeningParam.payment(...)` | Optional. With it, the user can pay from the PayME wallet; without it, the user pays as a guest (card, QR) |
 | All other operations, `getBalance`, `getAccountInfo` | Required |
 
@@ -292,7 +291,6 @@ Build `openingParam` with one of the `PayMEOpeningParam` named constructors:
 | `transferQR(identityToken:, data:)` | Transfer to a bank account | [`PayMETransferQRParam`](#paymetransferqrparam-transferqr) |
 | `service(identityToken:, data:)` | Bill payment (electricity, water, cards…) | [`PayMEServiceParam`](#paymeserviceparam-service) |
 | `deposit`, `withdraw`, `transfer` `(identityToken:, data:)` | Top up, withdraw, transfer | [`PayMEPayParam`](#paymepayparam-deposit-withdraw-transfer) |
-| `payme()` | The full PayME wallet; the user signs in | None |
 
 ```dart
 await PaymeMiniappFlutter.open(
@@ -423,7 +421,6 @@ Errors come from two places: a `PlatformException` from the `Future` (`e.code`; 
 | `PayMEOpeningParam.open(phone: phone)` | `PayMEOpeningParam.open(identityToken: identityToken)` |
 | `PayMEOpeningParam.pay(phone: phone, data: ...)` (likewise `transferQR`, `service`, `deposit`, `withdraw`, `transfer`, `kyc`) | `PayMEOpeningParam.pay(identityToken: identityToken, data: ...)` |
 | `PayMEOpeningParam.payment(data: ...)` | `PayMEOpeningParam.payment(identityToken: identityToken /* optional */, data: ...)` |
-| (none) | `PayMEOpeningParam.payme()` |
 | `getBalance(phone)` | `getBalance(identityToken)` |
 | `getAccountInfo(phone)` | `getAccountInfo(identityToken)` |
 

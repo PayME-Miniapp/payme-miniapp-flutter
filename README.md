@@ -242,7 +242,6 @@ Future<void> openWallet(String identityToken) async {
 
 | Thao tác | `identityToken` |
 | --- | --- |
-| `PayMEOpeningParam.payme()` | Không dùng (người dùng tự đăng nhập) |
 | `PayMEOpeningParam.payment(...)` | Tuỳ chọn. Có thì người dùng trả được bằng ví PayME; không có thì thanh toán như khách vãng lai (thẻ, QR) |
 | Các thao tác còn lại, `getBalance`, `getAccountInfo` | Bắt buộc |
 
@@ -292,7 +291,6 @@ PaymeMiniappFlutter.open(type, openingParam)
 | `transferQR(identityToken:, data:)` | Chuyển tiền tới tài khoản ngân hàng | [`PayMETransferQRParam`](#paymetransferqrparam-transferqr) |
 | `service(identityToken:, data:)` | Thanh toán dịch vụ (điện, nước, thẻ…) | [`PayMEServiceParam`](#paymeserviceparam-service) |
 | `deposit`, `withdraw`, `transfer` `(identityToken:, data:)` | Nạp, rút, chuyển tiền | [`PayMEPayParam`](#paymepayparam-deposit-withdraw-transfer) |
-| `payme()` | Toàn bộ ví PayME, người dùng tự đăng nhập | Không có |
 
 ```dart
 await PaymeMiniappFlutter.open(
@@ -423,7 +421,6 @@ Bản 3.x thay số điện thoại bằng `identityToken` và không tương th
 | `PayMEOpeningParam.open(phone: phone)` | `PayMEOpeningParam.open(identityToken: identityToken)` |
 | `PayMEOpeningParam.pay(phone: phone, data: ...)` (tương tự `transferQR`, `service`, `deposit`, `withdraw`, `transfer`, `kyc`) | `PayMEOpeningParam.pay(identityToken: identityToken, data: ...)` |
 | `PayMEOpeningParam.payment(data: ...)` | `PayMEOpeningParam.payment(identityToken: identityToken /* tuỳ chọn */, data: ...)` |
-| (không có) | `PayMEOpeningParam.payme()` |
 | `getBalance(phone)` | `getBalance(identityToken)` |
 | `getAccountInfo(phone)` | `getAccountInfo(identityToken)` |
 
