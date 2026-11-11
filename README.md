@@ -4,7 +4,7 @@
 
 Plugin Flutter để mở PayME Miniapp (ví, thanh toán, nạp, rút, chuyển tiền, dịch vụ, eKYC) trong ứng dụng của bạn trên iOS và Android.
 
-Phiên bản hiện tại: **3.0.5**. Plugin đã kèm SDK native (iOS `PayME-Miniapp` 0.8.5, Android `native-android` 0.8.7), ứng dụng không cần khai báo thêm.
+Phiên bản hiện tại: **3.1.0**. Plugin đã kèm SDK native (iOS `PayME-Miniapp` 0.9.0, Android `native-android` 0.9.0), ứng dụng không cần khai báo thêm.
 
 > **Bắt buộc nâng nếu dùng eKYC:** 3.0.0–3.0.3 (Android `native-android` 0.8.x trước 0.8.6) gây crash `NoSuchMethodError: extractCameraCharacteristics` khi mở camera eKYC (SDK dùng CameraX 1.6, không tương thích thư viện eKYC Kalapa). Nâng lên 3.0.4 trở lên. Nếu ứng dụng tự khai báo CameraX (`androidx.camera:*`), dùng bản `1.5.x` (khuyến nghị `1.5.3`), không dùng `1.6.x`.
 
@@ -17,8 +17,9 @@ Phiên bản hiện tại: **3.0.5**. Plugin đã kèm SDK native (iOS `PayME-Mi
 5. [identityToken](#identitytoken)
 6. [API](#api)
 7. [Mã lỗi](#mã-lỗi)
-8. [Nâng cấp từ 2.x](#nâng-cấp-từ-2x)
-9. [Hỗ trợ](#hỗ-trợ)
+8. [Nâng cấp lên 3.1.0](#nâng-cấp-lên-310)
+9. [Nâng cấp từ 2.x](#nâng-cấp-từ-2x)
+10. [Hỗ trợ](#hỗ-trợ)
 
 ## Yêu cầu
 
@@ -26,8 +27,7 @@ Phiên bản hiện tại: **3.0.5**. Plugin đã kèm SDK native (iOS `PayME-Mi
 - iOS 13.0 trở lên, build bằng Xcode 26.2 trở lên, CocoaPods.
 - Android `minSdkVersion` 26, `targetSdkVersion` 33 trở lên, `compileSdkVersion` 37.
 - Build Android: JDK 17, Gradle 9.3.1, Android Gradle Plugin 9.1.1, Kotlin Gradle Plugin 2.2.20, NDK 28.2.13676358.
-- Bộ key `appId`, `publicKey`, `privateKey` do PayME cấp.
-- Server của bạn gọi được API cấp `identityToken` của PayME.
+- Server của bạn gọi được API cấp `identityToken` của PayME (bằng bộ key PayME cấp cho server).
 
 ## Cài đặt
 
@@ -39,7 +39,7 @@ Hoặc thêm vào `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  payme_miniapp_flutter: ^3.0.5
+  payme_miniapp_flutter: ^3.1.0
 ```
 
 ### iOS
@@ -223,7 +223,7 @@ Future<void> setUpPayME() async {
   PaymeMiniappFlutter.onResponse.listen((e) => debugPrint('PayME response ${e['action']}'));
   PaymeMiniappFlutter.onError.listen((e) => debugPrint('PayME error ${e['action']} ${e['code']}'));
   try {
-    await PaymeMiniappFlutter.init('<APP_ID>', '<PUBLIC_KEY>', '<PRIVATE_KEY>', env: PayMEEnv.SANDBOX);
+    await PaymeMiniappFlutter.initialize(env: PayMEEnv.SANDBOX);
   } on PlatformException catch (e) {
     debugPrint('PayME init lỗi ${e.code}: ${e.message}');
   }
@@ -239,8 +239,6 @@ Future<void> openWallet(String identityToken) async {
   }
 }
 ```
-
-> Không đưa key thật vào mã nguồn công khai. `publicKey` và `privateKey` viết trên một dòng, bỏ ký tự xuống dòng (ví dụ `-----BEGIN PUBLIC KEY-----MFww...-----END PUBLIC KEY-----`).
 
 ## identityToken
 
@@ -263,24 +261,21 @@ Future<void> openWallet(String identityToken) async {
 
 Mọi hàm là `static` trên `PaymeMiniappFlutter`. Lớp tham số và hằng số nằm trong `package:payme_miniapp_flutter/payme_miniapp_type.dart`.
 
-Các hàm trả `Future` không mang dữ liệu. Kết quả và lỗi nghiệp vụ trả về qua stream `onResponse` và `onError`. Khi gọi sai (thiếu tham số, chưa `init`…), `Future` ném `PlatformException` và lệnh không được thực hiện. Hãy bọc lời gọi bằng `try/catch`.
+Các hàm trả `Future` không mang dữ liệu. Kết quả và lỗi nghiệp vụ trả về qua stream `onResponse` và `onError`. Khi gọi sai (thiếu tham số, chưa `initialize`…), `Future` ném `PlatformException` và lệnh không được thực hiện. Hãy bọc lời gọi bằng `try/catch`.
 
-### init
+### initialize
 
 ```dart
-PaymeMiniappFlutter.init(appId, publicKey, privateKey, {locale, env, mode})
+PaymeMiniappFlutter.initialize({locale, env, mode})
 ```
 
 | Tham số | Mô tả |
 | --- | --- |
-| `appId` | Mã ứng dụng do PayME cấp |
-| `publicKey` | Public key của PayME |
-| `privateKey` | Private key của ứng dụng |
 | `locale` | `PayMELocale.VI` (mặc định) hoặc `PayMELocale.EN` |
 | `env` | `PayMEEnv.PRODUCTION` (mặc định) hoặc `PayMEEnv.SANDBOX` |
 | `mode` | Thường không cần truyền. Mặc định `PayMEMode.MINIAPP_SANDBOX` khi `env` là `SANDBOX`, còn lại `PayMEMode.MINIAPP_PRODUCT` |
 
-Gọi `init` một lần, trước mọi hàm khác. Gọi hàm khác khi chưa `init` sẽ nhận lỗi `PAYME_NOT_INITIALIZED`.
+Gọi `initialize` một lần, trước mọi hàm khác. Gọi hàm khác khi chưa `initialize` sẽ nhận lỗi `PAYME_NOT_INITIALIZED`. Ứng dụng không cần truyền key: SDK đã có sẵn.
 
 ### open
 
@@ -414,13 +409,17 @@ Lỗi đến từ hai nơi: `PlatformException` của `Future` (`e.code`, lệnh
 | --- | --- | --- | --- |
 | `401` | `onError` | `identityToken` sai hoặc hết hạn | Lấy `identityToken` mới rồi gọi lại |
 | `IDENTITY_TOKEN_REQUIRED` | `onError` | Thiếu `identityToken` | Truyền `identityToken` |
-| `MISSING_INFO` | `PlatformException` | Thiếu tham số bắt buộc (ví dụ key rỗng khi `init`) | Truyền đủ tham số |
+| `MISSING_INFO` | `PlatformException` | Thiếu tham số bắt buộc (ví dụ thiếu `action` khi `open`) | Truyền đủ tham số |
 | `INVALID_PARAM` | `PlatformException` | Tham số `open` sai | Sửa tham số theo bảng ở [open](#open) |
-| `PAYME_NOT_INITIALIZED` | `PlatformException` | Chưa gọi `init` | Gọi `init` trước |
+| `PAYME_NOT_INITIALIZED` | `PlatformException` | Chưa gọi `initialize` | Gọi `initialize` trước |
 | `USER_CANCEL` | `onError` | Người dùng đóng Miniapp | Không phải lỗi |
 | `MINIAPP_ALREADY_OPEN` | `onError` | Đang có Miniapp mở | Đợi Miniapp đóng, hoặc gọi `close()` trước |
 | `MINIAPP_CANNOT_PRESENT` | Cả hai | Không hiển thị được Miniapp | Gọi `open` khi ứng dụng đang hiển thị; Android mở `modal` cần `FlutterFragmentActivity` |
 | Mã khác | Cả hai | Lỗi mạng, máy chủ hoặc nghiệp vụ | Hiển thị `description`, thử lại; liên hệ PayME nếu lặp lại |
+
+## Nâng cấp lên 3.1.0
+
+Đổi `init(appId, publicKey, privateKey, ...)` thành `initialize(locale:, env:, mode:)`. `init` cũ vẫn chạy (deprecated) và bỏ qua key truyền vào.
 
 ## Nâng cấp từ 2.x
 
@@ -435,13 +434,13 @@ Bản 3.x thay số điện thoại bằng `identityToken` và không tương th
 | `getAccountInfo(phone)` | `getAccountInfo(identityToken)` |
 
 1. Server: tích hợp API `token-init` (liên hệ PayME).
-2. Đổi dependency thành `payme_miniapp_flutter: ^3.0.5`, chạy `flutter pub get` rồi `cd ios && pod install --repo-update`.
+2. Đổi dependency thành `payme_miniapp_flutter: ^3.1.0`, chạy `flutter pub get` rồi `cd ios && pod install --repo-update`.
 3. Thay mọi `phone` bằng `identityToken`.
 4. Xử lý lỗi `401` và `IDENTITY_TOKEN_REQUIRED`; bọc các lời gọi bằng `try/catch` `PlatformException`.
 5. Build iOS bằng Xcode 26.2 trở lên.
 
 ## Hỗ trợ
 
-PayME Technology Corporation, email [hotro@payme.vn](mailto:hotro@payme.vn). Bộ key, tài liệu API `token-init` và API tạo giao dịch `payment`: liên hệ PayME.
+PayME Technology Corporation, email [hotro@payme.vn](mailto:hotro@payme.vn). Bộ key cho server, tài liệu API `token-init` và API tạo giao dịch `payment`: liên hệ PayME.
 
 Danh sách phiên bản: [pub.dev `payme_miniapp_flutter`](https://pub.dev/packages/payme_miniapp_flutter/versions).

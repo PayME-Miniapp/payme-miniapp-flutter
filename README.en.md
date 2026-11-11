@@ -4,7 +4,7 @@
 
 A Flutter plugin that opens PayME Miniapp (wallet, payment, top-up, withdrawal, transfer, bill payment, eKYC) in your app on iOS and Android.
 
-Current version: **3.0.5**. The plugin bundles the native SDKs (iOS `PayME-Miniapp` 0.8.5, Android `native-android` 0.8.7); your app does not need to declare them.
+Current version: **3.1.0**. The plugin bundles the native SDKs (iOS `PayME-Miniapp` 0.9.0, Android `native-android` 0.9.0); your app does not need to declare them.
 
 > **Required upgrade if you use eKYC:** 3.0.0–3.0.3 (Android `native-android` 0.8.x before 0.8.6) crash with `NoSuchMethodError: extractCameraCharacteristics` when the eKYC camera opens (the SDK used CameraX 1.6, which the Kalapa eKYC library does not support). Upgrade to 3.0.4 or later. If your app declares CameraX (`androidx.camera:*`) itself, use `1.5.x` (`1.5.3` recommended), not `1.6.x`.
 
@@ -17,8 +17,9 @@ Current version: **3.0.5**. The plugin bundles the native SDKs (iOS `PayME-Minia
 5. [identityToken](#identitytoken)
 6. [API](#api)
 7. [Error codes](#error-codes)
-8. [Upgrading from 2.x](#upgrading-from-2x)
-9. [Support](#support)
+8. [Upgrading to 3.1.0](#upgrading-to-310)
+9. [Upgrading from 2.x](#upgrading-from-2x)
+10. [Support](#support)
 
 ## Requirements
 
@@ -26,8 +27,7 @@ Current version: **3.0.5**. The plugin bundles the native SDKs (iOS `PayME-Minia
 - iOS 13.0 or later, built with Xcode 26.2 or later, CocoaPods.
 - Android `minSdkVersion` 26, `targetSdkVersion` 33 or later, `compileSdkVersion` 37.
 - Android build: JDK 17, Gradle 9.3.1, Android Gradle Plugin 9.1.1, Kotlin Gradle Plugin 2.2.20, NDK 28.2.13676358.
-- The `appId`, `publicKey`, `privateKey` key set issued by PayME.
-- Your server can call PayME's `identityToken` API.
+- Your server can call PayME's `identityToken` API (with the key set PayME issues for your server).
 
 ## Installation
 
@@ -39,7 +39,7 @@ Or add it to `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  payme_miniapp_flutter: ^3.0.5
+  payme_miniapp_flutter: ^3.1.0
 ```
 
 ### iOS
@@ -223,7 +223,7 @@ Future<void> setUpPayME() async {
   PaymeMiniappFlutter.onResponse.listen((e) => debugPrint('PayME response ${e['action']}'));
   PaymeMiniappFlutter.onError.listen((e) => debugPrint('PayME error ${e['action']} ${e['code']}'));
   try {
-    await PaymeMiniappFlutter.init('<APP_ID>', '<PUBLIC_KEY>', '<PRIVATE_KEY>', env: PayMEEnv.SANDBOX);
+    await PaymeMiniappFlutter.initialize(env: PayMEEnv.SANDBOX);
   } on PlatformException catch (e) {
     debugPrint('PayME init failed ${e.code}: ${e.message}');
   }
@@ -239,8 +239,6 @@ Future<void> openWallet(String identityToken) async {
   }
 }
 ```
-
-> Do not put real keys in public source code. Write `publicKey` and `privateKey` on a single line, without line breaks (for example `-----BEGIN PUBLIC KEY-----MFww...-----END PUBLIC KEY-----`).
 
 ## identityToken
 
@@ -265,22 +263,19 @@ All methods are `static` on `PaymeMiniappFlutter`. Parameter classes and constan
 
 The methods return a `Future` that carries no data. Results and business errors arrive on the `onResponse` and `onError` streams. On a bad call (missing arguments, not initialized…), the `Future` throws a `PlatformException` and nothing is done. Wrap your calls in `try/catch`.
 
-### init
+### initialize
 
 ```dart
-PaymeMiniappFlutter.init(appId, publicKey, privateKey, {locale, env, mode})
+PaymeMiniappFlutter.initialize({locale, env, mode})
 ```
 
 | Parameter | Description |
 | --- | --- |
-| `appId` | App ID issued by PayME |
-| `publicKey` | PayME's public key |
-| `privateKey` | Your app's private key |
 | `locale` | `PayMELocale.VI` (default) or `PayMELocale.EN` |
 | `env` | `PayMEEnv.PRODUCTION` (default) or `PayMEEnv.SANDBOX` |
 | `mode` | Usually omitted. Defaults to `PayMEMode.MINIAPP_SANDBOX` when `env` is `SANDBOX`, otherwise `PayMEMode.MINIAPP_PRODUCT` |
 
-Call `init` once, before any other method. Calling another method before `init` gives `PAYME_NOT_INITIALIZED`.
+Call `initialize` once, before any other method. Calling another method before `initialize` gives `PAYME_NOT_INITIALIZED`. Your app does not pass any key: the SDK has it built in.
 
 ### open
 
@@ -414,13 +409,17 @@ Errors come from two places: a `PlatformException` from the `Future` (`e.code`; 
 | --- | --- | --- | --- |
 | `401` | `onError` | `identityToken` invalid or expired | Fetch a new `identityToken` and retry |
 | `IDENTITY_TOKEN_REQUIRED` | `onError` | `identityToken` missing | Pass an `identityToken` |
-| `MISSING_INFO` | `PlatformException` | A required argument is missing (for example an empty key in `init`) | Pass all arguments |
+| `MISSING_INFO` | `PlatformException` | A required argument is missing (for example no `action` in `open`) | Pass all arguments |
 | `INVALID_PARAM` | `PlatformException` | Invalid `open` parameters | Fix them per the tables in [open](#open) |
-| `PAYME_NOT_INITIALIZED` | `PlatformException` | `init` not called | Call `init` first |
+| `PAYME_NOT_INITIALIZED` | `PlatformException` | `initialize` not called | Call `initialize` first |
 | `USER_CANCEL` | `onError` | The user closed Miniapp | Not an error |
 | `MINIAPP_ALREADY_OPEN` | `onError` | A Miniapp is already open | Wait for it to close, or call `close()` first |
 | `MINIAPP_CANNOT_PRESENT` | Both | Miniapp cannot be shown | Call `open` while your app is visible; on Android, `modal` needs `FlutterFragmentActivity` |
 | Other codes | Both | Network, server or business error | Show `description` and retry; contact PayME if it persists |
+
+## Upgrading to 3.1.0
+
+Replace `init(appId, publicKey, privateKey, ...)` with `initialize(locale:, env:, mode:)`. The old `init` still works (deprecated) and ignores the keys.
 
 ## Upgrading from 2.x
 
@@ -435,13 +434,13 @@ Errors come from two places: a `PlatformException` from the `Future` (`e.code`; 
 | `getAccountInfo(phone)` | `getAccountInfo(identityToken)` |
 
 1. Server: integrate the `token-init` API (contact PayME).
-2. Change the dependency to `payme_miniapp_flutter: ^3.0.5`, run `flutter pub get`, then `cd ios && pod install --repo-update`.
+2. Change the dependency to `payme_miniapp_flutter: ^3.1.0`, run `flutter pub get`, then `cd ios && pod install --repo-update`.
 3. Replace every `phone` with `identityToken`.
 4. Handle `401` and `IDENTITY_TOKEN_REQUIRED`; wrap calls in `try/catch` for `PlatformException`.
 5. Build iOS with Xcode 26.2 or later.
 
 ## Support
 
-PayME Technology Corporation, email [hotro@payme.vn](mailto:hotro@payme.vn). Keys, the `token-init` API documentation and the transaction API for `payment`: contact PayME.
+PayME Technology Corporation, email [hotro@payme.vn](mailto:hotro@payme.vn). Server keys, the `token-init` API documentation and the transaction API for `payment`: contact PayME.
 
 Versions: [pub.dev `payme_miniapp_flutter`](https://pub.dev/packages/payme_miniapp_flutter/versions).
