@@ -4,7 +4,7 @@
 
 A Flutter plugin that opens PayME Miniapp (wallet, payment, top-up, withdrawal, transfer, bill payment, eKYC) in your app on iOS and Android.
 
-Current version: **3.1.1**. The plugin bundles the native SDKs (iOS `PayME-Miniapp` 0.9.1, Android `native-android` 0.9.0); your app does not need to declare them. 3.1.1: on iOS the keyboard opens by itself when the Miniapp shows a PIN/OTP input.
+Current version: **3.2.0**. The plugin bundles the native SDKs (iOS `PayME-Miniapp` 0.10.0, Android `native-android` 0.10.0); your app does not need to declare them. 3.2.0: phone numbers are picked with the system contact picker, no contacts permission.
 
 > **Required upgrade if you use eKYC:** 3.0.0–3.0.3 (Android `native-android` 0.8.x before 0.8.6) crash with `NoSuchMethodError: extractCameraCharacteristics` when the eKYC camera opens (the SDK used CameraX 1.6, which the Kalapa eKYC library does not support). Upgrade to 3.0.4 or later. If your app declares CameraX (`androidx.camera:*`) itself, use `1.5.x` (`1.5.3` recommended), not `1.6.x`.
 
@@ -17,9 +17,10 @@ Current version: **3.1.1**. The plugin bundles the native SDKs (iOS `PayME-Minia
 5. [identityToken](#identitytoken)
 6. [API](#api)
 7. [Error codes](#error-codes)
-8. [Upgrading to 3.1.0](#upgrading-to-310)
-9. [Upgrading from 2.x](#upgrading-from-2x)
-10. [Support](#support)
+8. [Upgrading to 3.2.0](#upgrading-to-320)
+9. [Upgrading to 3.1.0](#upgrading-to-310)
+10. [Upgrading from 2.x](#upgrading-from-2x)
+11. [Support](#support)
 
 ## Requirements
 
@@ -39,7 +40,7 @@ Or add it to `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  payme_miniapp_flutter: ^3.1.1
+  payme_miniapp_flutter: ^3.2.0
 ```
 
 ### iOS
@@ -175,8 +176,6 @@ Add to `ios/Runner/Info.plist` (adjust the descriptions to your app):
 </array>
 <key>NSCameraUsageDescription</key>
 <string>The app uses the camera for identity verification and to scan payment codes</string>
-<key>NSContactsUsageDescription</key>
-<string>The app accesses your contacts to pick a phone number quickly</string>
 <key>NSFaceIDUsageDescription</key>
 <string>Use Face ID for quick, secure authentication</string>
 <key>NSPhotoLibraryAddUsageDescription</key>
@@ -201,6 +200,8 @@ In Xcode, open the `Runner` target → **Signing & Capabilities** → **+ Capabi
 ### Android
 
 No permissions to declare. The required permissions are already in the SDK, and Gradle merges them into your app.
+
+The SDK does not declare `READ_CONTACTS`: picking a phone number uses the system contact picker, which meets the Google Play policy for apps targeting Android 17. iOS does not need `NSContactsUsageDescription` either. 3.1.1 and earlier still need these permissions.
 
 Miniapp runs on `http://localhost`, so the SDK declares a `networkSecurityConfig` that only allows cleartext to `localhost`. Your app's `android:usesCleartextTraffic` then no longer applies. If your app has its own `networkSecurityConfig`, add `tools:replace="android:networkSecurityConfig"` to `<application>` and allow cleartext to `localhost` in your file:
 
@@ -417,6 +418,10 @@ Errors come from two places: a `PlatformException` from the `Future` (`e.code`; 
 | `MINIAPP_CANNOT_PRESENT` | Both | Miniapp cannot be shown | Call `open` while your app is visible; on Android, `modal` needs `FlutterFragmentActivity` |
 | Other codes | Both | Network, server or business error | Show `description` and retry; contact PayME if it persists |
 
+## Upgrading to 3.2.0
+
+No API change. Picking a phone number for top-up uses the system contact picker: the Android SDK no longer declares `READ_CONTACTS` and the iOS SDK does not read contacts. You can remove `NSContactsUsageDescription` from `Info.plist`, and the `tools:node="remove"` line for `READ_CONTACTS` if you added it.
+
 ## Upgrading to 3.1.0
 
 Replace `init(appId, publicKey, privateKey, ...)` with `initialize(locale:, env:, mode:)`. The old `init` still works (deprecated) and ignores the keys.
@@ -434,7 +439,7 @@ Replace `init(appId, publicKey, privateKey, ...)` with `initialize(locale:, env:
 | `getAccountInfo(phone)` | `getAccountInfo(identityToken)` |
 
 1. Server: integrate the `token-init` API (contact PayME).
-2. Change the dependency to `payme_miniapp_flutter: ^3.1.1`, run `flutter pub get`, then `cd ios && pod install --repo-update`.
+2. Change the dependency to `payme_miniapp_flutter: ^3.2.0`, run `flutter pub get`, then `cd ios && pod install --repo-update`.
 3. Replace every `phone` with `identityToken`.
 4. Handle `401` and `IDENTITY_TOKEN_REQUIRED`; wrap calls in `try/catch` for `PlatformException`.
 5. Build iOS with Xcode 26.2 or later.

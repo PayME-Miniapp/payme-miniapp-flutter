@@ -4,7 +4,7 @@
 
 Plugin Flutter để mở PayME Miniapp (ví, thanh toán, nạp, rút, chuyển tiền, dịch vụ, eKYC) trong ứng dụng của bạn trên iOS và Android.
 
-Phiên bản hiện tại: **3.1.1**. Plugin đã kèm SDK native (iOS `PayME-Miniapp` 0.9.1, Android `native-android` 0.9.0), ứng dụng không cần khai báo thêm. Bản 3.1.1: trên iOS bàn phím tự bật khi Miniapp mở ô nhập PIN/OTP.
+Phiên bản hiện tại: **3.2.0**. Plugin đã kèm SDK native (iOS `PayME-Miniapp` 0.10.0, Android `native-android` 0.10.0), ứng dụng không cần khai báo thêm. Bản 3.2.0: chọn số từ danh bạ bằng bộ chọn của hệ thống, không cần quyền danh bạ.
 
 > **Bắt buộc nâng nếu dùng eKYC:** 3.0.0–3.0.3 (Android `native-android` 0.8.x trước 0.8.6) gây crash `NoSuchMethodError: extractCameraCharacteristics` khi mở camera eKYC (SDK dùng CameraX 1.6, không tương thích thư viện eKYC Kalapa). Nâng lên 3.0.4 trở lên. Nếu ứng dụng tự khai báo CameraX (`androidx.camera:*`), dùng bản `1.5.x` (khuyến nghị `1.5.3`), không dùng `1.6.x`.
 
@@ -17,9 +17,10 @@ Phiên bản hiện tại: **3.1.1**. Plugin đã kèm SDK native (iOS `PayME-Mi
 5. [identityToken](#identitytoken)
 6. [API](#api)
 7. [Mã lỗi](#mã-lỗi)
-8. [Nâng cấp lên 3.1.0](#nâng-cấp-lên-310)
-9. [Nâng cấp từ 2.x](#nâng-cấp-từ-2x)
-10. [Hỗ trợ](#hỗ-trợ)
+8. [Nâng cấp lên 3.2.0](#nâng-cấp-lên-320)
+9. [Nâng cấp lên 3.1.0](#nâng-cấp-lên-310)
+10. [Nâng cấp từ 2.x](#nâng-cấp-từ-2x)
+11. [Hỗ trợ](#hỗ-trợ)
 
 ## Yêu cầu
 
@@ -39,7 +40,7 @@ Hoặc thêm vào `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  payme_miniapp_flutter: ^3.1.1
+  payme_miniapp_flutter: ^3.2.0
 ```
 
 ### iOS
@@ -175,8 +176,6 @@ Thêm vào `ios/Runner/Info.plist` (sửa câu mô tả theo ứng dụng của 
 </array>
 <key>NSCameraUsageDescription</key>
 <string>Ứng dụng cần dùng máy ảnh để định danh và quét mã thanh toán</string>
-<key>NSContactsUsageDescription</key>
-<string>Ứng dụng cần truy cập danh bạ để chọn nhanh số điện thoại</string>
 <key>NSFaceIDUsageDescription</key>
 <string>Dùng Face ID để xác thực nhanh và an toàn</string>
 <key>NSPhotoLibraryAddUsageDescription</key>
@@ -201,6 +200,8 @@ Trong Xcode, vào target `Runner` → **Signing & Capabilities** → **+ Capabil
 ### Android
 
 Không cần khai báo quyền. Các quyền cần thiết đã có sẵn trong SDK, Gradle tự gộp vào ứng dụng.
+
+SDK không khai báo `READ_CONTACTS`: chọn số điện thoại dùng bộ chọn danh bạ của hệ thống, đáp ứng chính sách Google Play cho ứng dụng target Android 17. iOS cũng không cần `NSContactsUsageDescription`. Bản 3.1.1 trở về trước vẫn cần các quyền này.
 
 Miniapp chạy trên `http://localhost`, nên SDK khai báo `networkSecurityConfig` chỉ cho phép cleartext tới `localhost`. Khi đó `android:usesCleartextTraffic` của ứng dụng không còn tác dụng. Nếu ứng dụng có `networkSecurityConfig` riêng, thêm `tools:replace="android:networkSecurityConfig"` vào `<application>` và cho phép cleartext tới `localhost` trong file của bạn:
 
@@ -417,6 +418,10 @@ Lỗi đến từ hai nơi: `PlatformException` của `Future` (`e.code`, lệnh
 | `MINIAPP_CANNOT_PRESENT` | Cả hai | Không hiển thị được Miniapp | Gọi `open` khi ứng dụng đang hiển thị; Android mở `modal` cần `FlutterFragmentActivity` |
 | Mã khác | Cả hai | Lỗi mạng, máy chủ hoặc nghiệp vụ | Hiển thị `description`, thử lại; liên hệ PayME nếu lặp lại |
 
+## Nâng cấp lên 3.2.0
+
+Không đổi API. Chọn số điện thoại khi nạp tiền dùng bộ chọn danh bạ của hệ thống: SDK Android không còn khai báo `READ_CONTACTS`, SDK iOS không đọc danh bạ. Có thể bỏ `NSContactsUsageDescription` khỏi `Info.plist`, và bỏ dòng `tools:node="remove"` cho `READ_CONTACTS` nếu đã thêm.
+
 ## Nâng cấp lên 3.1.0
 
 Đổi `init(appId, publicKey, privateKey, ...)` thành `initialize(locale:, env:, mode:)`. `init` cũ vẫn chạy (deprecated) và bỏ qua key truyền vào.
@@ -434,7 +439,7 @@ Bản 3.x thay số điện thoại bằng `identityToken` và không tương th
 | `getAccountInfo(phone)` | `getAccountInfo(identityToken)` |
 
 1. Server: tích hợp API `token-init` (liên hệ PayME).
-2. Đổi dependency thành `payme_miniapp_flutter: ^3.1.1`, chạy `flutter pub get` rồi `cd ios && pod install --repo-update`.
+2. Đổi dependency thành `payme_miniapp_flutter: ^3.2.0`, chạy `flutter pub get` rồi `cd ios && pod install --repo-update`.
 3. Thay mọi `phone` bằng `identityToken`.
 4. Xử lý lỗi `401` và `IDENTITY_TOKEN_REQUIRED`; bọc các lời gọi bằng `try/catch` `PlatformException`.
 5. Build iOS bằng Xcode 26.2 trở lên.
