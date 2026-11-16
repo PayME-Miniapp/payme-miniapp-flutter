@@ -394,8 +394,32 @@ responseSub.cancel();
 
 | Stream | Nội dung (`Map`) | Khi nào |
 | --- | --- | --- |
-| `onResponse` | `{action, ...dữ liệu}` | Giao dịch thành công, hoặc có kết quả `getBalance` / `getAccountInfo` |
+| `onResponse` | `{action, ...dữ liệu}` | Có kết quả giao dịch (xem `state` bên dưới), hoặc có kết quả `getBalance` / `getAccountInfo` |
 | `onError` | `{action, code, description}` | Có lỗi hoặc người dùng đóng Miniapp |
+
+**Kết quả giao dịch.** Với `PAY`, `PAYMENT`, `TRANSFER_QR`, `SERVICE`, `DEPOSIT`, `WITHDRAW`, `TRANSFER`, Miniapp gửi `onResponse` khi người dùng rời màn kết quả, **ở mọi trạng thái giao dịch**, không chỉ khi thành công. Luôn kiểm tra `state`, và đối chiếu trên server (qua `ipnUrl` hoặc API tra cứu) trước khi giao hàng:
+
+| Trường | Ý nghĩa |
+| --- | --- |
+| `state` | `SUCCEEDED` thành công · `PENDING` đang xử lý (tra lại sau) · `FAILED` thất bại |
+| `transaction` | Mã giao dịch PayME |
+| `partnerTransaction` | Mã giao dịch của bạn (giá trị đã truyền khi mở) |
+| `amount`, `amountText` | Số tiền (số nguyên VND) và chuỗi đã định dạng |
+| `method`, `createdAt` | Phương thức thanh toán, thời điểm tạo |
+| `extraData` | Dữ liệu riêng bạn đã truyền |
+
+Miniapp cũng tự gửi `onResponse` với action `GET_BALANCE` khi số dư thay đổi (không do bạn gọi `getBalance`).
+
+```dart
+PaymeMiniappFlutter.onResponse.listen((e) {
+  if (e['action'] != 'PAY') return;
+  switch (e['state']) {
+    case 'SUCCEEDED': /* đã thanh toán */ break;
+    case 'PENDING': /* đang xử lý: tra lại trên server */ break;
+    default: /* thất bại */
+  }
+});
+```
 
 Đăng ký listener một lần, trước khi gọi `open`, `getBalance` hay `getAccountInfo`.
 
