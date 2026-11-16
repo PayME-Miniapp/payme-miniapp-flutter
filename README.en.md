@@ -4,7 +4,7 @@
 
 A Flutter plugin that opens PayME Miniapp (wallet, payment, top-up, withdrawal, transfer, bill payment, eKYC) in your app on iOS and Android.
 
-Current version: **3.2.0**. The plugin bundles the native SDKs (iOS `PayME-Miniapp` 0.10.0, Android `native-android` 0.10.0); your app does not need to declare them. 3.2.0: phone numbers are picked with the system contact picker, no contacts permission.
+Current version: **3.2.1**. The plugin bundles the native SDKs (iOS `PayME-Miniapp` 0.10.0, Android `native-android` 0.10.1); your app does not need to declare them. 3.2.1: on Android `getBalance` returns `linked: false` for a wallet that is not linked.
 
 > **Required upgrade if you use eKYC:** 3.0.0–3.0.3 (Android `native-android` 0.8.x before 0.8.6) crash with `NoSuchMethodError: extractCameraCharacteristics` when the eKYC camera opens (the SDK used CameraX 1.6, which the Kalapa eKYC library does not support). Upgrade to 3.0.4 or later. If your app declares CameraX (`androidx.camera:*`) itself, use `1.5.x` (`1.5.3` recommended), not `1.6.x`.
 
@@ -40,7 +40,7 @@ Or add it to `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  payme_miniapp_flutter: ^3.2.0
+  payme_miniapp_flutter: ^3.2.1
 ```
 
 ### iOS
@@ -439,7 +439,7 @@ Replace `init(appId, publicKey, privateKey, ...)` with `initialize(locale:, env:
 | `getAccountInfo(phone)` | `getAccountInfo(identityToken)` |
 
 1. Server: integrate the `token-init` API (contact PayME).
-2. Change the dependency to `payme_miniapp_flutter: ^3.2.0`, run `flutter pub get`, then `cd ios && pod install --repo-update`.
+2. Change the dependency to `payme_miniapp_flutter: ^3.2.1`, run `flutter pub get`, then `cd ios && pod install --repo-update`.
 3. Replace every `phone` with `identityToken`.
 4. Handle `401` and `IDENTITY_TOKEN_REQUIRED`; wrap calls in `try/catch` for `PlatformException`.
 5. Build iOS with Xcode 26.2 or later.
