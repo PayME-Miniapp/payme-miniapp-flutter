@@ -201,7 +201,11 @@ Trong Xcode, vào target `Runner` → **Signing & Capabilities** → **+ Capabil
 
 Không cần khai báo quyền. Các quyền cần thiết đã có sẵn trong SDK, Gradle tự gộp vào ứng dụng.
 
-SDK không khai báo `READ_CONTACTS`: chọn số điện thoại dùng bộ chọn danh bạ của hệ thống, đáp ứng chính sách Google Play cho ứng dụng target Android 17. iOS cũng không cần `NSContactsUsageDescription`. Bản 3.1.1 trở về trước vẫn cần các quyền này.
+SDK không khai báo `READ_CONTACTS`: chọn số điện thoại dùng bộ chọn danh bạ của hệ thống, đáp ứng chính sách Google Play cho ứng dụng target Android 17. iOS cũng không cần `NSContactsUsageDescription`. Bản 3.1.1 trở về trước vẫn khai báo `READ_CONTACTS`; muốn bỏ khi chưa nâng được, thêm vào `android/app/src/main/AndroidManifest.xml` (thẻ `<manifest>` cần `xmlns:tools="http://schemas.android.com/tools"`). Khi đó nút danh bạ ở màn nạp điện thoại báo chưa được cấp quyền, mục số đã nạp gần đây vẫn dùng được:
+
+```xml
+<uses-permission android:name="android.permission.READ_CONTACTS" tools:node="remove" />
+```
 
 Miniapp chạy trên `http://localhost`, nên SDK khai báo `networkSecurityConfig` chỉ cho phép cleartext tới `localhost`. Khi đó `android:usesCleartextTraffic` của ứng dụng không còn tác dụng. Nếu ứng dụng có `networkSecurityConfig` riêng, thêm `tools:replace="android:networkSecurityConfig"` vào `<application>` và cho phép cleartext tới `localhost` trong file của bạn:
 

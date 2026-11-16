@@ -201,7 +201,11 @@ In Xcode, open the `Runner` target → **Signing & Capabilities** → **+ Capabi
 
 No permissions to declare. The required permissions are already in the SDK, and Gradle merges them into your app.
 
-The SDK does not declare `READ_CONTACTS`: picking a phone number uses the system contact picker, which meets the Google Play policy for apps targeting Android 17. iOS does not need `NSContactsUsageDescription` either. 3.1.1 and earlier still need these permissions.
+The SDK does not declare `READ_CONTACTS`: picking a phone number uses the system contact picker, which meets the Google Play policy for apps targeting Android 17. iOS does not need `NSContactsUsageDescription` either. 3.1.1 and earlier still declare `READ_CONTACTS`; to drop it before you can upgrade, add to `android/app/src/main/AndroidManifest.xml` (the `<manifest>` tag needs `xmlns:tools="http://schemas.android.com/tools"`). The contacts button on the top-up screen then reports the permission as not granted; recently topped-up numbers still work:
+
+```xml
+<uses-permission android:name="android.permission.READ_CONTACTS" tools:node="remove" />
+```
 
 Miniapp runs on `http://localhost`, so the SDK declares a `networkSecurityConfig` that only allows cleartext to `localhost`. Your app's `android:usesCleartextTraffic` then no longer applies. If your app has its own `networkSecurityConfig`, add `tools:replace="android:networkSecurityConfig"` to `<application>` and allow cleartext to `localhost` in your file:
 
