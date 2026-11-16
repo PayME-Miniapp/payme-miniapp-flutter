@@ -4,7 +4,7 @@
 
 Plugin Flutter để mở PayME Miniapp (ví, thanh toán, nạp, rút, chuyển tiền, dịch vụ, eKYC) trong ứng dụng của bạn trên iOS và Android.
 
-Phiên bản hiện tại: **3.2.2**. Plugin đã kèm SDK native (iOS `PayME-Miniapp` 0.10.0, Android `native-android` 0.10.2), ứng dụng không cần khai báo thêm. Bản 3.2.2: SDK Android kèm sẵn rule R8/ProGuard (không cần tự thêm rule khi bật minify).
+Phiên bản hiện tại: **3.2.3**. Plugin đã kèm SDK native (iOS `PayME-Miniapp` 0.10.1, Android `native-android` 0.10.2), ứng dụng không cần khai báo thêm. Bản 3.2.3: `getBalance` trên iOS trả `linked: false` khi `accessToken` rỗng, giống Android. Từ 3.2.2, SDK Android kèm sẵn rule R8/ProGuard (không cần tự thêm rule khi bật minify).
 
 > **Bắt buộc nâng nếu dùng eKYC:** 3.0.0–3.0.3 (Android `native-android` 0.8.x trước 0.8.6) gây crash `NoSuchMethodError: extractCameraCharacteristics` khi mở camera eKYC (SDK dùng CameraX 1.6, không tương thích thư viện eKYC Kalapa). Nâng lên 3.0.4 trở lên. Nếu ứng dụng tự khai báo CameraX (`androidx.camera:*`), dùng bản `1.5.x` (khuyến nghị `1.5.3`), không dùng `1.6.x`.
 
@@ -40,7 +40,7 @@ Hoặc thêm vào `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  payme_miniapp_flutter: ^3.2.2
+  payme_miniapp_flutter: ^3.2.3
 ```
 
 ### iOS
@@ -467,7 +467,7 @@ Bản 3.x thay số điện thoại bằng `identityToken` và không tương th
 | `getAccountInfo(phone)` | `getAccountInfo(identityToken)` |
 
 1. Server: tích hợp API `token-init` (liên hệ PayME).
-2. Đổi dependency thành `payme_miniapp_flutter: ^3.2.2`, chạy `flutter pub get` rồi `cd ios && pod install --repo-update`.
+2. Đổi dependency thành `payme_miniapp_flutter: ^3.2.3`, chạy `flutter pub get` rồi `cd ios && pod install --repo-update`.
 3. Thay mọi `phone` bằng `identityToken`.
 4. Xử lý lỗi `401` và `IDENTITY_TOKEN_REQUIRED`; bọc các lời gọi bằng `try/catch` `PlatformException`.
 5. Build iOS bằng Xcode 26.2 trở lên.
