@@ -4,7 +4,7 @@
 
 A Flutter plugin that opens PayME Miniapp (wallet, payment, top-up, withdrawal, transfer, bill payment, eKYC) in your app on iOS and Android.
 
-Current version: **3.4.0**. The plugin bundles the native SDKs (iOS `PayME-Miniapp` 0.15.0 inside the package, Android `native-android` 0.11.0); your app declares nothing extra. 3.4.0: the iOS SDK no longer depends on CocoaPods trunk and only pulls in `lottie-ios` and `KalapaEkycSDK`; Mixpanel is removed. See [Upgrading to 3.4.0](#upgrading-to-340).
+Current version: **3.5.0**. The plugin bundles the native SDKs (iOS `PayME-Miniapp` 0.16.0 inside the package, Android `native-android` 0.11.0); your app declares nothing extra and `ios/Podfile` needs no PayME-specific setup. See [Upgrading to 3.5.0](#upgrading-to-350).
 
 > **Required upgrade if you use eKYC:** 3.0.0–3.0.3 (Android `native-android` 0.8.x before 0.8.6) crash with `NoSuchMethodError: extractCameraCharacteristics` when the eKYC camera opens (the SDK used CameraX 1.6, which the Kalapa eKYC library does not support). Upgrade to 3.0.4 or later. If your app declares CameraX (`androidx.camera:*`) itself, use `1.5.x` (`1.5.3` recommended), not `1.6.x`.
 
@@ -17,11 +17,12 @@ Current version: **3.4.0**. The plugin bundles the native SDKs (iOS `PayME-Minia
 5. [identityToken](#identitytoken)
 6. [API](#api)
 7. [Error codes](#error-codes)
-8. [Upgrading to 3.4.0](#upgrading-to-340)
-9. [Upgrading to 3.2.0](#upgrading-to-320)
-10. [Upgrading to 3.1.0](#upgrading-to-310)
-11. [Upgrading from 2.x](#upgrading-from-2x)
-12. [Support](#support)
+8. [Upgrading to 3.5.0](#upgrading-to-350)
+9. [Upgrading to 3.4.0](#upgrading-to-340)
+10. [Upgrading to 3.2.0](#upgrading-to-320)
+11. [Upgrading to 3.1.0](#upgrading-to-310)
+12. [Upgrading from 2.x](#upgrading-from-2x)
+13. [Support](#support)
 
 ## Requirements
 
@@ -41,57 +42,30 @@ Or add it to `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  payme_miniapp_flutter: ^3.4.0
+  payme_miniapp_flutter: ^3.5.0
 ```
 
 ### iOS
 
-Update `ios/Podfile`:
+Nothing PayME-specific is needed in `ios/Podfile`: keep Flutter's default Podfile (`platform :ios` `13.0` or later), with no `$dynamic_frameworks` or `BUILD_LIBRARY_FOR_DISTRIBUTION`. Just run:
+
+```sh
+cd ios && pod install --repo-update
+```
+
+If you build with Xcode 27 and it complains that a pod's minimum iOS is below 15.0, raise it in `post_install`:
 
 ```ruby
-# Your app's minimum iOS version (same as `platform :ios` at the top of the Podfile). With Xcode 27 the minimum is '15.0'.
-app_min_ios = '13.0'
-platform :ios, app_min_ios
-
-target 'Runner' do
-  use_frameworks!
-  use_modular_headers!
-
-  flutter_install_all_ios_pods File.dirname(File.realpath(__FILE__))
-
-  $dynamic_frameworks = [
-    'lottie-ios'
-  ]
-
-  pre_install do |installer|
-    installer.pod_targets.each do |pod|
-      if $dynamic_frameworks.include?(pod.name)
-        def pod.build_type
-          Pod::BuildType.dynamic_framework
-        end
-      end
-    end
-  end
-
-  post_install do |installer|
-    installer.pods_project.targets.each do |target|
-      flutter_additional_ios_build_settings(target)
-      target.build_configurations.each do |config|
-        if $dynamic_frameworks.include?(target.name)
-          config.build_settings['BUILD_LIBRARY_FOR_DISTRIBUTION'] = 'YES'
-        end
-        # Raise pods whose minimum iOS is below the app's (Xcode 27 errors below 15.0)
-        if config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'].to_f < app_min_ios.to_f
-          config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = app_min_ios
-        end
+post_install do |installer|
+  installer.pods_project.targets.each do |target|
+    flutter_additional_ios_build_settings(target)
+    target.build_configurations.each do |config|
+      if config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'].to_f < 15.0
+        config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '15.0'
       end
     end
   end
 end
-```
-
-```sh
-cd ios && pod install --repo-update
 ```
 
 ### Android
@@ -446,10 +420,17 @@ Errors come from two places: a `PlatformException` from the `Future` (`e.code`; 
 | `MINIAPP_CANNOT_PRESENT` | Both | Miniapp cannot be shown | Call `open` while your app is visible; on Android, `modal` needs `FlutterFragmentActivity` |
 | Other codes | Both | Network, server or business error | Show `description` and retry; contact PayME if it persists |
 
+## Upgrading to 3.5.0
+
+1. Change the dependency to `payme_miniapp_flutter: ^3.5.0`, run `flutter pub get`, then `cd ios && pod install --repo-update`.
+2. Remove every PayME-specific setting from `ios/Podfile`: the `$dynamic_frameworks` list, the `pre_install` block, the `BUILD_LIBRARY_FOR_DISTRIBUTION` line. `use_frameworks!` is optional.
+3. iOS SDK 0.16.0 no longer uses Lottie: if your app uses `lottie-ios` itself, declare it in your `Podfile`.
+4. No Dart API changes.
+
 ## Upgrading to 3.4.0
 
-1. Change the dependency to `payme_miniapp_flutter: ^3.4.0`, run `flutter pub get`, then `cd ios && pod install --repo-update`. No extra `source` line is needed in the `Podfile`.
-2. Shorten `$dynamic_frameworks` in `ios/Podfile` to `['lottie-ios']` (see [Installation](#installation)); drop `'PayME-Miniapp'` if present.
+1. Change the dependency to `payme_miniapp_flutter: ^3.5.0`, run `flutter pub get`, then `cd ios && pod install --repo-update`. No extra `source` line is needed in the `Podfile`.
+2. Shorten `$dynamic_frameworks` in `ios/Podfile` to `['lottie-ios']` (see [Installation](#installation)); drop `'PayME-Miniapp'` if present. From 3.5.0 the list is not needed at all, see [Upgrading to 3.5.0](#upgrading-to-350).
 3. The iOS SDK no longer pulls in `SwiftyJSON`, `ZIPFoundation`, `NSLogger`, `Mixpanel-swift`, `CryptoSwift`, `SwiftyRSA`, `GCDWebServer`: if your app uses any of these pods itself, declare it in your `Podfile`.
 4. No Dart API changes. The SDK no longer sends events to Mixpanel.
 5. iOS SDK 0.15.0 has not been tested on iOS 15–17: if your app supports those versions, try the wallet and payment flows before you ship.
@@ -475,7 +456,7 @@ Replace `init(appId, publicKey, privateKey, ...)` with `initialize(locale:, env:
 | `getAccountInfo(phone)` | `getAccountInfo(identityToken)` |
 
 1. Server: integrate the `token-init` API (contact PayME).
-2. Change the dependency to `payme_miniapp_flutter: ^3.4.0`, run `flutter pub get`, then `cd ios && pod install --repo-update`.
+2. Change the dependency to `payme_miniapp_flutter: ^3.5.0`, run `flutter pub get`, then `cd ios && pod install --repo-update`.
 3. Replace every `phone` with `identityToken`.
 4. Handle `401` and `IDENTITY_TOKEN_REQUIRED`; wrap calls in `try/catch` for `PlatformException`.
 5. Build iOS with Xcode 26.2 or later.

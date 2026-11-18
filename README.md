@@ -4,7 +4,7 @@
 
 Plugin Flutter để mở PayME Miniapp (ví, thanh toán, nạp, rút, chuyển tiền, dịch vụ, eKYC) trong ứng dụng của bạn trên iOS và Android.
 
-Phiên bản hiện tại: **3.4.0**. Plugin đã kèm SDK native (iOS `PayME-Miniapp` 0.15.0 nằm sẵn trong gói, Android `native-android` 0.11.0), ứng dụng không cần khai báo thêm. Bản 3.4.0: SDK iOS không còn phụ thuộc CocoaPods trunk và chỉ còn kéo theo `lottie-ios`, `KalapaEkycSDK`; bỏ Mixpanel. Xem [Nâng cấp lên 3.4.0](#nâng-cấp-lên-340).
+Phiên bản hiện tại: **3.5.0**. Plugin đã kèm SDK native (iOS `PayME-Miniapp` 0.16.0 nằm sẵn trong gói, Android `native-android` 0.11.0), ứng dụng không cần khai báo thêm và `ios/Podfile` không cần cấu hình gì cho PayME. Xem [Nâng cấp lên 3.5.0](#nâng-cấp-lên-350).
 
 > **Bắt buộc nâng nếu dùng eKYC:** 3.0.0–3.0.3 (Android `native-android` 0.8.x trước 0.8.6) gây crash `NoSuchMethodError: extractCameraCharacteristics` khi mở camera eKYC (SDK dùng CameraX 1.6, không tương thích thư viện eKYC Kalapa). Nâng lên 3.0.4 trở lên. Nếu ứng dụng tự khai báo CameraX (`androidx.camera:*`), dùng bản `1.5.x` (khuyến nghị `1.5.3`), không dùng `1.6.x`.
 
@@ -17,11 +17,12 @@ Phiên bản hiện tại: **3.4.0**. Plugin đã kèm SDK native (iOS `PayME-Mi
 5. [identityToken](#identitytoken)
 6. [API](#api)
 7. [Mã lỗi](#mã-lỗi)
-8. [Nâng cấp lên 3.4.0](#nâng-cấp-lên-340)
-9. [Nâng cấp lên 3.2.0](#nâng-cấp-lên-320)
-10. [Nâng cấp lên 3.1.0](#nâng-cấp-lên-310)
-11. [Nâng cấp từ 2.x](#nâng-cấp-từ-2x)
-12. [Hỗ trợ](#hỗ-trợ)
+8. [Nâng cấp lên 3.5.0](#nâng-cấp-lên-350)
+9. [Nâng cấp lên 3.4.0](#nâng-cấp-lên-340)
+10. [Nâng cấp lên 3.2.0](#nâng-cấp-lên-320)
+11. [Nâng cấp lên 3.1.0](#nâng-cấp-lên-310)
+12. [Nâng cấp từ 2.x](#nâng-cấp-từ-2x)
+13. [Hỗ trợ](#hỗ-trợ)
 
 ## Yêu cầu
 
@@ -41,57 +42,30 @@ Hoặc thêm vào `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  payme_miniapp_flutter: ^3.4.0
+  payme_miniapp_flutter: ^3.5.0
 ```
 
 ### iOS
 
-Cập nhật `ios/Podfile`:
+Không cần thêm gì vào `ios/Podfile` cho PayME: giữ Podfile mặc định của Flutter (`platform :ios` từ `13.0` trở lên), không cần `$dynamic_frameworks` hay `BUILD_LIBRARY_FOR_DISTRIBUTION`. Chỉ cần:
+
+```sh
+cd ios && pod install --repo-update
+```
+
+Build bằng Xcode 27 mà Xcode báo pod có iOS tối thiểu thấp hơn 15.0: nâng trong `post_install`.
 
 ```ruby
-# Mức iOS tối thiểu của ứng dụng (giống `platform :ios` ở đầu Podfile). Build bằng Xcode 27 thì tối thiểu '15.0'.
-app_min_ios = '13.0'
-platform :ios, app_min_ios
-
-target 'Runner' do
-  use_frameworks!
-  use_modular_headers!
-
-  flutter_install_all_ios_pods File.dirname(File.realpath(__FILE__))
-
-  $dynamic_frameworks = [
-    'lottie-ios'
-  ]
-
-  pre_install do |installer|
-    installer.pod_targets.each do |pod|
-      if $dynamic_frameworks.include?(pod.name)
-        def pod.build_type
-          Pod::BuildType.dynamic_framework
-        end
-      end
-    end
-  end
-
-  post_install do |installer|
-    installer.pods_project.targets.each do |target|
-      flutter_additional_ios_build_settings(target)
-      target.build_configurations.each do |config|
-        if $dynamic_frameworks.include?(target.name)
-          config.build_settings['BUILD_LIBRARY_FOR_DISTRIBUTION'] = 'YES'
-        end
-        # Nâng pod có iOS tối thiểu thấp hơn ứng dụng (Xcode 27 báo lỗi nếu dưới 15.0)
-        if config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'].to_f < app_min_ios.to_f
-          config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = app_min_ios
-        end
+post_install do |installer|
+  installer.pods_project.targets.each do |target|
+    flutter_additional_ios_build_settings(target)
+    target.build_configurations.each do |config|
+      if config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'].to_f < 15.0
+        config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '15.0'
       end
     end
   end
 end
-```
-
-```sh
-cd ios && pod install --repo-update
 ```
 
 ### Android
@@ -446,10 +420,17 @@ Lỗi đến từ hai nơi: `PlatformException` của `Future` (`e.code`, lệnh
 | `MINIAPP_CANNOT_PRESENT` | Cả hai | Không hiển thị được Miniapp | Gọi `open` khi ứng dụng đang hiển thị; Android mở `modal` cần `FlutterFragmentActivity` |
 | Mã khác | Cả hai | Lỗi mạng, máy chủ hoặc nghiệp vụ | Hiển thị `description`, thử lại; liên hệ PayME nếu lặp lại |
 
+## Nâng cấp lên 3.5.0
+
+1. Đổi dependency thành `payme_miniapp_flutter: ^3.5.0`, chạy `flutter pub get` rồi `cd ios && pod install --repo-update`.
+2. Bỏ khỏi `ios/Podfile` mọi cấu hình đã thêm cho PayME: danh sách `$dynamic_frameworks`, khối `pre_install`, dòng `BUILD_LIBRARY_FOR_DISTRIBUTION`. `use_frameworks!` không bắt buộc.
+3. SDK iOS 0.16.0 không còn dùng Lottie: ứng dụng tự dùng `lottie-ios` thì khai báo trực tiếp trong `Podfile`.
+4. API Dart không đổi.
+
 ## Nâng cấp lên 3.4.0
 
-1. Đổi dependency thành `payme_miniapp_flutter: ^3.4.0`, chạy `flutter pub get` rồi `cd ios && pod install --repo-update`. Không cần thêm `source` nào vào `Podfile`.
-2. Rút gọn `$dynamic_frameworks` trong `ios/Podfile` còn `['lottie-ios']` (xem [Cài đặt](#cài-đặt)); bỏ `'PayME-Miniapp'` nếu có.
+1. Đổi dependency thành `payme_miniapp_flutter: ^3.5.0`, chạy `flutter pub get` rồi `cd ios && pod install --repo-update`. Không cần thêm `source` nào vào `Podfile`.
+2. Rút gọn `$dynamic_frameworks` trong `ios/Podfile` còn `['lottie-ios']` (xem [Cài đặt](#cài-đặt)); bỏ `'PayME-Miniapp'` nếu có. Từ 3.5.0 bỏ hẳn danh sách này, xem [Nâng cấp lên 3.5.0](#nâng-cấp-lên-350).
 3. SDK iOS không còn kéo theo `SwiftyJSON`, `ZIPFoundation`, `NSLogger`, `Mixpanel-swift`, `CryptoSwift`, `SwiftyRSA`, `GCDWebServer`: ứng dụng tự dùng pod nào thì khai báo trực tiếp trong `Podfile`.
 4. API Dart không đổi. SDK không còn gửi sự kiện lên Mixpanel.
 5. SDK iOS 0.15.0 chưa được kiểm tra trên iOS 15–17: ứng dụng hỗ trợ các bản này nên thử luồng mở ví và thanh toán trước khi phát hành.
@@ -475,7 +456,7 @@ Bản 3.x thay số điện thoại bằng `identityToken` và không tương th
 | `getAccountInfo(phone)` | `getAccountInfo(identityToken)` |
 
 1. Server: tích hợp API `token-init` (liên hệ PayME).
-2. Đổi dependency thành `payme_miniapp_flutter: ^3.4.0`, chạy `flutter pub get` rồi `cd ios && pod install --repo-update`.
+2. Đổi dependency thành `payme_miniapp_flutter: ^3.5.0`, chạy `flutter pub get` rồi `cd ios && pod install --repo-update`.
 3. Thay mọi `phone` bằng `identityToken`.
 4. Xử lý lỗi `401` và `IDENTITY_TOKEN_REQUIRED`; bọc các lời gọi bằng `try/catch` `PlatformException`.
 5. Build iOS bằng Xcode 26.2 trở lên.
