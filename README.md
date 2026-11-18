@@ -4,7 +4,7 @@
 
 Plugin Flutter để mở PayME Miniapp (ví, thanh toán, nạp, rút, chuyển tiền, dịch vụ, eKYC) trong ứng dụng của bạn trên iOS và Android.
 
-Phiên bản hiện tại: **3.2.3**. Plugin đã kèm SDK native (iOS `PayME-Miniapp` 0.10.1, Android `native-android` 0.10.2), ứng dụng không cần khai báo thêm. Bản 3.2.3: `getBalance` trên iOS trả `linked: false` khi `accessToken` rỗng, giống Android. Từ 3.2.2, SDK Android kèm sẵn rule R8/ProGuard (không cần tự thêm rule khi bật minify).
+Phiên bản hiện tại: **3.4.0**. Plugin đã kèm SDK native (iOS `PayME-Miniapp` 0.15.0 nằm sẵn trong gói, Android `native-android` 0.11.0), ứng dụng không cần khai báo thêm. Bản 3.4.0: SDK iOS không còn phụ thuộc CocoaPods trunk và chỉ còn kéo theo `lottie-ios`, `KalapaEkycSDK`; bỏ Mixpanel. Xem [Nâng cấp lên 3.4.0](#nâng-cấp-lên-340).
 
 > **Bắt buộc nâng nếu dùng eKYC:** 3.0.0–3.0.3 (Android `native-android` 0.8.x trước 0.8.6) gây crash `NoSuchMethodError: extractCameraCharacteristics` khi mở camera eKYC (SDK dùng CameraX 1.6, không tương thích thư viện eKYC Kalapa). Nâng lên 3.0.4 trở lên. Nếu ứng dụng tự khai báo CameraX (`androidx.camera:*`), dùng bản `1.5.x` (khuyến nghị `1.5.3`), không dùng `1.6.x`.
 
@@ -17,10 +17,11 @@ Phiên bản hiện tại: **3.2.3**. Plugin đã kèm SDK native (iOS `PayME-Mi
 5. [identityToken](#identitytoken)
 6. [API](#api)
 7. [Mã lỗi](#mã-lỗi)
-8. [Nâng cấp lên 3.2.0](#nâng-cấp-lên-320)
-9. [Nâng cấp lên 3.1.0](#nâng-cấp-lên-310)
-10. [Nâng cấp từ 2.x](#nâng-cấp-từ-2x)
-11. [Hỗ trợ](#hỗ-trợ)
+8. [Nâng cấp lên 3.4.0](#nâng-cấp-lên-340)
+9. [Nâng cấp lên 3.2.0](#nâng-cấp-lên-320)
+10. [Nâng cấp lên 3.1.0](#nâng-cấp-lên-310)
+11. [Nâng cấp từ 2.x](#nâng-cấp-từ-2x)
+12. [Hỗ trợ](#hỗ-trợ)
 
 ## Yêu cầu
 
@@ -40,7 +41,7 @@ Hoặc thêm vào `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  payme_miniapp_flutter: ^3.2.3
+  payme_miniapp_flutter: ^3.4.0
 ```
 
 ### iOS
@@ -59,8 +60,7 @@ target 'Runner' do
   flutter_install_all_ios_pods File.dirname(File.realpath(__FILE__))
 
   $dynamic_frameworks = [
-    'PayME-Miniapp', 'CryptoSwift', 'SwiftyRSA', 'GCDWebServer', 'NSLogger',
-    'lottie-ios', 'SwiftyJSON', 'ZIPFoundation', 'Mixpanel-swift'
+    'lottie-ios'
   ]
 
   pre_install do |installer|
@@ -446,6 +446,14 @@ Lỗi đến từ hai nơi: `PlatformException` của `Future` (`e.code`, lệnh
 | `MINIAPP_CANNOT_PRESENT` | Cả hai | Không hiển thị được Miniapp | Gọi `open` khi ứng dụng đang hiển thị; Android mở `modal` cần `FlutterFragmentActivity` |
 | Mã khác | Cả hai | Lỗi mạng, máy chủ hoặc nghiệp vụ | Hiển thị `description`, thử lại; liên hệ PayME nếu lặp lại |
 
+## Nâng cấp lên 3.4.0
+
+1. Đổi dependency thành `payme_miniapp_flutter: ^3.4.0`, chạy `flutter pub get` rồi `cd ios && pod install --repo-update`. Không cần thêm `source` nào vào `Podfile`.
+2. Rút gọn `$dynamic_frameworks` trong `ios/Podfile` còn `['lottie-ios']` (xem [Cài đặt](#cài-đặt)); bỏ `'PayME-Miniapp'` nếu có.
+3. SDK iOS không còn kéo theo `SwiftyJSON`, `ZIPFoundation`, `NSLogger`, `Mixpanel-swift`, `CryptoSwift`, `SwiftyRSA`, `GCDWebServer`: ứng dụng tự dùng pod nào thì khai báo trực tiếp trong `Podfile`.
+4. API Dart không đổi. SDK không còn gửi sự kiện lên Mixpanel.
+5. SDK iOS 0.15.0 chưa được kiểm tra trên iOS 15–17: ứng dụng hỗ trợ các bản này nên thử luồng mở ví và thanh toán trước khi phát hành.
+
 ## Nâng cấp lên 3.2.0
 
 Không đổi API. Chọn số điện thoại khi nạp tiền dùng bộ chọn danh bạ của hệ thống: SDK Android không còn khai báo `READ_CONTACTS`, SDK iOS không đọc danh bạ. Có thể bỏ `NSContactsUsageDescription` khỏi `Info.plist`, và bỏ dòng `tools:node="remove"` cho `READ_CONTACTS` nếu đã thêm.
@@ -467,7 +475,7 @@ Bản 3.x thay số điện thoại bằng `identityToken` và không tương th
 | `getAccountInfo(phone)` | `getAccountInfo(identityToken)` |
 
 1. Server: tích hợp API `token-init` (liên hệ PayME).
-2. Đổi dependency thành `payme_miniapp_flutter: ^3.2.3`, chạy `flutter pub get` rồi `cd ios && pod install --repo-update`.
+2. Đổi dependency thành `payme_miniapp_flutter: ^3.4.0`, chạy `flutter pub get` rồi `cd ios && pod install --repo-update`.
 3. Thay mọi `phone` bằng `identityToken`.
 4. Xử lý lỗi `401` và `IDENTITY_TOKEN_REQUIRED`; bọc các lời gọi bằng `try/catch` `PlatformException`.
 5. Build iOS bằng Xcode 26.2 trở lên.
